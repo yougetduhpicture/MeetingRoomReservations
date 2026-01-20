@@ -1,0 +1,176 @@
+### ===========================================
+### CREATE RESERVATION REQUESTS
+### ===========================================
+### IMPORTANT: First run a login request from login.rest
+### and copy the token to the @token variable below
+### ===========================================
+
+@baseUrl = http://localhost:3000/api
+
+### PASTE YOUR TOKEN HERE (get it from login.rest response)
+@aliceToken = YOUR_ALICE_TOKEN_HERE
+@bobToken = YOUR_BOB_TOKEN_HERE
+
+### -----------------------------------------
+### Create a valid reservation (should succeed - 201)
+### -----------------------------------------
+### Creates a reservation for Conference Room A on June 10, 2026
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-1",
+  "date": "2026-06-10",
+  "startTime": "09:00",
+  "endTime": "10:00"
+}
+
+### -----------------------------------------
+### Create reservation for different room (should succeed - 201)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-2",
+  "date": "2026-06-10",
+  "startTime": "14:00",
+  "endTime": "15:00"
+}
+
+### -----------------------------------------
+### Create reservation in afternoon (should succeed - 201)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{bobToken}}
+
+{
+  "roomId": "room-3",
+  "date": "2026-06-11",
+  "startTime": "16:00",
+  "endTime": "17:00"
+}
+
+### -----------------------------------------
+### Create reservation without token (should fail - 401)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+
+{
+  "roomId": "room-1",
+  "date": "2026-06-15",
+  "startTime": "10:00",
+  "endTime": "11:00"
+}
+
+### -----------------------------------------
+### Create reservation with invalid token (should fail - 401)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer invalid-token-here
+
+{
+  "roomId": "room-1",
+  "date": "2026-06-15",
+  "startTime": "10:00",
+  "endTime": "11:00"
+}
+
+### -----------------------------------------
+### Create reservation with past date (should fail - 400)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-1",
+  "date": "2020-01-15",
+  "startTime": "10:00",
+  "endTime": "11:00"
+}
+
+### -----------------------------------------
+### Create reservation with non-hourly time (should fail - 400)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-1",
+  "date": "2026-06-15",
+  "startTime": "09:30",
+  "endTime": "10:30"
+}
+
+### -----------------------------------------
+### Create reservation with wrong duration (should fail - 400)
+### -----------------------------------------
+### Duration is 2 hours, should be exactly 1 hour
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-1",
+  "date": "2026-06-15",
+  "startTime": "09:00",
+  "endTime": "11:00"
+}
+
+### -----------------------------------------
+### Create reservation for non-existent room (should fail - 404)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-999",
+  "date": "2026-06-15",
+  "startTime": "10:00",
+  "endTime": "11:00"
+}
+
+### -----------------------------------------
+### Create reservation with invalid time format (should fail - 400)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-1",
+  "date": "2026-06-15",
+  "startTime": "9:00",
+  "endTime": "10:00"
+}
+
+### -----------------------------------------
+### Create reservation with missing fields (should fail - 400)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-1",
+  "date": "2026-06-15"
+}

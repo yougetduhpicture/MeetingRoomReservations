@@ -1,0 +1,61 @@
+### ===========================================
+### GET RESERVATIONS REQUESTS
+### ===========================================
+### IMPORTANT: First run a login request from login.rest
+### and copy the token to the @token variable below
+### ===========================================
+
+@baseUrl = http://localhost:3000/api
+
+### PASTE YOUR TOKEN HERE (get from login.rest)
+@token = YOUR_TOKEN_HERE
+
+### -----------------------------------------
+### Get reservations for Conference Room A (room-1)
+### -----------------------------------------
+### Should return reservations res-1 and res-2 from seed data
+
+GET {{baseUrl}}/rooms/room-1/reservations
+Authorization: Bearer {{token}}
+
+### -----------------------------------------
+### Get reservations for Meeting Room B (room-2)
+### -----------------------------------------
+### Should return reservations res-3 and res-4 from seed data
+
+GET {{baseUrl}}/rooms/room-2/reservations
+Authorization: Bearer {{token}}
+
+### -----------------------------------------
+### Get reservations for Huddle Space C (room-3)
+### -----------------------------------------
+### Should return reservation res-5 from seed data
+
+GET {{baseUrl}}/rooms/room-3/reservations
+Authorization: Bearer {{token}}
+
+### -----------------------------------------
+### Get reservations for non-existent room (should fail - 404)
+### -----------------------------------------
+
+GET {{baseUrl}}/rooms/room-999/reservations
+Authorization: Bearer {{token}}
+
+### -----------------------------------------
+### Get reservations without authentication (should fail - 401)
+### -----------------------------------------
+
+GET {{baseUrl}}/rooms/room-1/reservations
+
+### -----------------------------------------
+### Get reservations with invalid token (should fail - 401)
+### -----------------------------------------
+
+GET {{baseUrl}}/rooms/room-1/reservations
+Authorization: Bearer invalid-token-here
+
+### -----------------------------------------
+### Health check (no auth required)
+### -----------------------------------------
+
+GET {{baseUrl}}/health

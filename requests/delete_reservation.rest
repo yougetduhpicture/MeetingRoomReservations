@@ -1,0 +1,72 @@
+### ===========================================
+### DELETE RESERVATION REQUESTS
+### ===========================================
+### IMPORTANT: First run a login request from login.rest
+### and copy the token to the @token variable below
+### ===========================================
+
+@baseUrl = http://localhost:3000/api
+
+### PASTE YOUR TOKENS HERE (get from login.rest)
+@aliceToken = YOUR_ALICE_TOKEN_HERE
+@bobToken = YOUR_BOB_TOKEN_HERE
+
+### -----------------------------------------
+### View current reservations first
+### -----------------------------------------
+
+GET {{baseUrl}}/rooms/room-1/reservations
+Authorization: Bearer {{aliceToken}}
+
+###
+
+### -----------------------------------------
+### Alice deletes her own reservation (should succeed - 204)
+### -----------------------------------------
+### res-1 belongs to Alice
+
+DELETE {{baseUrl}}/reservations/res-1
+Authorization: Bearer {{aliceToken}}
+
+### -----------------------------------------
+### Bob tries to delete Alice's reservation (should fail - 403)
+### -----------------------------------------
+### res-3 belongs to Alice, not Bob
+
+DELETE {{baseUrl}}/reservations/res-3
+Authorization: Bearer {{bobToken}}
+
+### -----------------------------------------
+### Delete non-existent reservation (should fail - 404)
+### -----------------------------------------
+
+DELETE {{baseUrl}}/reservations/non-existent-id
+Authorization: Bearer {{aliceToken}}
+
+### -----------------------------------------
+### Delete without authentication (should fail - 401)
+### -----------------------------------------
+
+DELETE {{baseUrl}}/reservations/res-2
+
+### -----------------------------------------
+### Delete with invalid token (should fail - 401)
+### -----------------------------------------
+
+DELETE {{baseUrl}}/reservations/res-2
+Authorization: Bearer invalid-token
+
+### -----------------------------------------
+### Bob deletes his own reservation (should succeed - 204)
+### -----------------------------------------
+### res-2 belongs to Bob
+
+DELETE {{baseUrl}}/reservations/res-2
+Authorization: Bearer {{bobToken}}
+
+### -----------------------------------------
+### Verify reservation was deleted
+### -----------------------------------------
+
+GET {{baseUrl}}/rooms/room-1/reservations
+Authorization: Bearer {{aliceToken}}

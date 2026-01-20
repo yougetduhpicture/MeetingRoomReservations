@@ -1,0 +1,90 @@
+### ===========================================
+### LOGIN REQUESTS
+### ===========================================
+### Use VS Code REST Client extension to run these requests
+### Install: ms-vscode.rest-client
+### ===========================================
+
+@baseUrl = http://localhost:3000/api
+
+### -----------------------------------------
+### Login as Alice (successful)
+### -----------------------------------------
+### Copy the token from the response to use in other requests
+
+# @name loginAlice
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "SecurePass123!"
+}
+
+### -----------------------------------------
+### Login as Bob (successful)
+### -----------------------------------------
+
+# @name loginBob
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "bob",
+  "password": "BobSecure2026!"
+}
+
+### -----------------------------------------
+### Login with invalid password (should fail - 401)
+### -----------------------------------------
+
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "WrongPassword123"
+}
+
+### -----------------------------------------
+### Login with non-existent user (should fail - 401)
+### -----------------------------------------
+
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "nonexistent",
+  "password": "SomePassword123"
+}
+
+### -----------------------------------------
+### Login with missing password (should fail - 400)
+### -----------------------------------------
+
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "alice"
+}
+
+### -----------------------------------------
+### Login with missing username (should fail - 400)
+### -----------------------------------------
+
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "password": "SecurePass123!"
+}
+
+### -----------------------------------------
+### Login with empty body (should fail - 400)
+### -----------------------------------------
+
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{}
