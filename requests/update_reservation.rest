@@ -47,8 +47,29 @@ Authorization: Bearer {{aliceToken}}
 ### -----------------------------------------
 ### Alice has a reservation at room-1, 2026-06-02, 09:00-10:00
 ### Bob tries to book the same slot → should get 409 Conflict
+### The error message includes nearest available time slots!
+### If the same day has no slots, it suggests slots from adjacent dates.
+###
+### Example response (same-day slots available):
+### {
+###   "error": "ConflictError",
+###   "message": "Conference Room A is already booked from 09:00-10:00 on 2026-06-02
+###              by Alice Johnson. Nearest available slots: 08:00-09:00 (earlier)
+###              or 10:00-11:00 (later).",
+###   "statusCode": 409
+### }
+###
+### Example response (no same-day slots, searching adjacent dates):
+### The system searches up to 30 days in each direction until finding available slots.
+### {
+###   "error": "ConflictError",
+###   "message": "Conference Room A is already booked from 09:00-10:00 on 2026-06-02
+###              by Alice Johnson. Nearest available slots: 2026-06-01 at 23:00-00:00
+###              or 2026-06-03 at 00:00-01:00.",
+###   "statusCode": 409
+### }
 
-### Bob tries to book Alice's slot (should fail - 409)
+### Bob tries to book Alice's slot (should fail - 409 with suggestions)
 
 POST {{baseUrl}}/reservations
 Content-Type: application/json

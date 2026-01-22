@@ -58,6 +58,200 @@ function isTimeSlotInPast(date: string, startTime: string): boolean {
 }
 
 /**
+ * Convert time string to hour number
+ */
+function timeToHour(time: string): number {
+  return parseInt(time.split(':')[0], 10);
+}
+
+/**
+ * Convert hour number to time string (HH:00 format)
+ */
+function hourToTime(hour: number): string {
+  return `${hour.toString().padStart(2, '0')}:00`;
+}
+
+/**
+ * Get the previous day's date string (YYYY-MM-DD)
+ */
+function getPreviousDate(date: string): string {
+  const d = new Date(date);
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split('T')[0];
+}
+
+/**
+ * Get the next day's date string (YYYY-MM-DD)
+ */
+function getNextDate(date: string): string {
+  const d = new Date(date);
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+/**
+ * Check if a date is in the past (before today)
+ */
+function isDateInPast(date: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const checkDate = new Date(date);
+  return checkDate < today;
+}
+
+/**
+ * Slot suggestion with optional date (for adjacent day suggestions)
+ */
+interface SlotSuggestion {
+  time: string; // e.g., "09:00-10:00"
+  date?: string; // e.g., "2026-06-03" (only set if different from requested date)
+}
+
+/**
+ * Find available slots on a specific date for a room
+ */
+function findAvailableSlotsOnDate(
+  roomId: string,
+  date: string
+): Set<number> {
+  const reservations = findReservationsByRoomAndDate(roomId, date);
+  const bookedHours = new Set(
+    reservations.map((res) => timeToHour(res.startTime))
+  );
+
+  const availableHours = new Set<number>();
+  for (let hour = 0; hour <= 23; hour++) {
+    if (!bookedHours.has(hour)) {
+      availableHours.add(hour);
+    }
+  }
+  return availableHours;
+}
+
+/**
+ * Maximum number of days to search for available slots
+ * Prevents infinite loops while providing reasonable coverage
+ */
+const MAX_SEARCH_DAYS = 30;
+
+/**
+ * Find the nearest available time slots before and after a given time
+ *
+ * Returns suggestions for alternative booking times when a conflict occurs.
+ * First searches the same day, then iterates through previous/next days
+ * until an available slot is found (up to MAX_SEARCH_DAYS).
+ */
+function findNearestAvailableSlots(
+  roomId: string,
+  date: string,
+  attemptedStartHour: number
+): { before: SlotSuggestion | null; after: SlotSuggestion | null } {
+  // Get available hours on the requested date
+  const sameDayAvailable = findAvailableSlotsOnDate(roomId, date);
+
+  let before: SlotSuggestion | null = null;
+  let after: SlotSuggestion | null = null;
+
+  // Search backwards for nearest available slot before attempted time (same day)
+  for (let hour = attemptedStartHour - 1; hour >= 0; hour--) {
+    if (sameDayAvailable.has(hour)) {
+      before = { time: `${hourToTime(hour)}-${hourToTime(hour + 1)}` };
+      break;
+    }
+  }
+
+  // Search forwards for nearest available slot after attempted time (same day)
+  for (let hour = attemptedStartHour + 1; hour <= 23; hour++) {
+    if (sameDayAvailable.has(hour)) {
+      after = { time: `${hourToTime(hour)}-${hourToTime(hour + 1)}` };
+      break;
+    }
+  }
+
+  // If no earlier slot on same day, search previous days (up to MAX_SEARCH_DAYS)
+  if (!before) {
+    let searchDate = date;
+    for (let day = 0; day < MAX_SEARCH_DAYS; day++) {
+      searchDate = getPreviousDate(searchDate);
+      if (isDateInPast(searchDate)) {
+        break; // Don't search past dates
+      }
+      const dayAvailable = findAvailableSlotsOnDate(roomId, searchDate);
+      // Find the latest available slot on this day
+      for (let hour = 23; hour >= 0; hour--) {
+        if (dayAvailable.has(hour)) {
+          before = {
+            time: `${hourToTime(hour)}-${hourToTime(hour + 1)}`,
+            date: searchDate,
+          };
+          break;
+        }
+      }
+      if (before) break; // Found a slot, stop searching
+    }
+  }
+
+  // If no later slot on same day, search next days (up to MAX_SEARCH_DAYS)
+  if (!after) {
+    let searchDate = date;
+    for (let day = 0; day < MAX_SEARCH_DAYS; day++) {
+      searchDate = getNextDate(searchDate);
+      const dayAvailable = findAvailableSlotsOnDate(roomId, searchDate);
+      // Find the earliest available slot on this day
+      for (let hour = 0; hour <= 23; hour++) {
+        if (dayAvailable.has(hour)) {
+          after = {
+            time: `${hourToTime(hour)}-${hourToTime(hour + 1)}`,
+            date: searchDate,
+          };
+          break;
+        }
+      }
+      if (after) break; // Found a slot, stop searching
+    }
+  }
+
+  return { before, after };
+}
+
+/**
+ * Format a slot suggestion for display
+ */
+function formatSlotSuggestion(slot: SlotSuggestion): string {
+  if (slot.date) {
+    return `${slot.date} at ${slot.time}`;
+  }
+  return slot.time;
+}
+
+/**
+ * Build suggestion message for available time slots
+ */
+function buildSuggestionMessage(
+  before: SlotSuggestion | null,
+  after: SlotSuggestion | null
+): string {
+  const beforeOnDifferentDay = before?.date !== undefined;
+  const afterOnDifferentDay = after?.date !== undefined;
+
+  if (before && after) {
+    // Both suggestions available
+    if (!beforeOnDifferentDay && !afterOnDifferentDay) {
+      // Both on same day
+      return ` Nearest available slots: ${before.time} (earlier) or ${after.time} (later).`;
+    } else {
+      // At least one on different day - include full format
+      return ` Nearest available slots: ${formatSlotSuggestion(before)} or ${formatSlotSuggestion(after)}.`;
+    }
+  } else if (before) {
+    return ` Nearest available slot: ${formatSlotSuggestion(before)}.`;
+  } else if (after) {
+    return ` Nearest available slot: ${formatSlotSuggestion(after)}.`;
+  }
+  return ' No available slots found.';
+}
+
+/**
  * Check if two time slots overlap
  *
  * Two slots overlap if one starts before the other ends AND
@@ -159,9 +353,17 @@ export async function createNewReservation(
         wasUpdated: true,
       };
     } else {
-      // Different user - throw conflict error with details
+      // Different user - find available alternatives and throw conflict error
+      const attemptedHour = timeToHour(startTime);
+      const { before, after } = findNearestAvailableSlots(
+        roomId,
+        date,
+        attemptedHour
+      );
+      const suggestionMessage = buildSuggestionMessage(before, after);
+
       throw new ConflictError(
-        `${room.name} is already booked from ${conflictingReservation.startTime}-${conflictingReservation.endTime} on ${date} by ${ownerName}. Please choose a different time slot.`,
+        `${room.name} is already booked from ${conflictingReservation.startTime}-${conflictingReservation.endTime} on ${date} by ${ownerName}.${suggestionMessage}`,
         {
           existingReservation: {
             reservationId: conflictingReservation.reservationId,

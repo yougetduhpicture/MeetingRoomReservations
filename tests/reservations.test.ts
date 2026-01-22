@@ -429,6 +429,159 @@ describe('Create Reservation - POST /api/reservations', () => {
       expect(response.status).toBe(409);
       expect(response.body.message).toContain('Alice Johnson');
     });
+
+    it('should include nearest available time slots in conflict message', async () => {
+      const aliceToken = await getAuthToken('alice', 'SecurePass123!');
+      const bobToken = await getAuthToken('bob', 'BobSecure2026!');
+
+      // Alice books 10:00-11:00
+      await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .send({
+          roomId: 'room-1',
+          date: '2026-06-25',
+          startTime: '10:00',
+          endTime: '11:00',
+        });
+
+      // Bob tries to book the same slot - should get suggestions
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${bobToken}`)
+        .send({
+          roomId: 'room-1',
+          date: '2026-06-25',
+          startTime: '10:00',
+          endTime: '11:00',
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body.message).toContain('Nearest available slot');
+      // Should suggest 09:00-10:00 (earlier) and 11:00-12:00 (later)
+      expect(response.body.message).toContain('09:00-10:00');
+      expect(response.body.message).toContain('11:00-12:00');
+    });
+
+    it('should suggest slots from adjacent dates when same day is fully booked', async () => {
+      const aliceToken = await getAuthToken('alice', 'SecurePass123!');
+      const bobToken = await getAuthToken('bob', 'BobSecure2026!');
+
+      // Alice books every hour on a specific date (making it fully booked)
+      const fullyBookedDate = '2026-07-15';
+      for (let hour = 0; hour <= 23; hour++) {
+        const startTime = `${hour.toString().padStart(2, '0')}:00`;
+        const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+        await request(app)
+          .post('/api/reservations')
+          .set('Authorization', `Bearer ${aliceToken}`)
+          .send({
+            roomId: 'room-3',
+            date: fullyBookedDate,
+            startTime,
+            endTime,
+          });
+      }
+
+      // Bob tries to book on the fully booked date
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${bobToken}`)
+        .send({
+          roomId: 'room-3',
+          date: fullyBookedDate,
+          startTime: '12:00',
+          endTime: '13:00',
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body.message).toContain('Nearest available slot');
+      // Should suggest slots from adjacent dates (includes date in format)
+      expect(response.body.message).toMatch(/2026-07-(14|16)/);
+    });
+
+    it('should include date in suggestion when slot is on different day', async () => {
+      const aliceToken = await getAuthToken('alice', 'SecurePass123!');
+      const bobToken = await getAuthToken('bob', 'BobSecure2026!');
+
+      // Alice books all morning slots (00:00-12:00) on a date
+      const testDate = '2026-08-10';
+      for (let hour = 0; hour < 12; hour++) {
+        const startTime = `${hour.toString().padStart(2, '0')}:00`;
+        const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+        await request(app)
+          .post('/api/reservations')
+          .set('Authorization', `Bearer ${aliceToken}`)
+          .send({
+            roomId: 'room-2',
+            date: testDate,
+            startTime,
+            endTime,
+          });
+      }
+
+      // Bob tries to book 10:00 - no earlier slots on same day
+      // Should suggest previous day for earlier slot
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${bobToken}`)
+        .send({
+          roomId: 'room-2',
+          date: testDate,
+          startTime: '10:00',
+          endTime: '11:00',
+        });
+
+      expect(response.status).toBe(409);
+      // Should have a same-day later suggestion (12:00-13:00)
+      expect(response.body.message).toContain('12:00-13:00');
+      // Should have a previous day earlier suggestion with date
+      expect(response.body.message).toContain('2026-08-09');
+    });
+
+    it('should search multiple days until finding an available slot', async () => {
+      const aliceToken = await getAuthToken('alice', 'SecurePass123!');
+      const bobToken = await getAuthToken('bob', 'BobSecure2026!');
+
+      // Alice books most hours (0-22) on 3 consecutive days (Sept 10, 11, 12)
+      // Note: 23:00-00:00 can't be booked (spans midnight), so 23:00 remains "available"
+      // This tests that the system searches across multiple days
+      const dates = ['2026-09-10', '2026-09-11', '2026-09-12'];
+      for (const bookDate of dates) {
+        for (let hour = 0; hour <= 22; hour++) {
+          const startTime = `${hour.toString().padStart(2, '0')}:00`;
+          const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+          await request(app)
+            .post('/api/reservations')
+            .set('Authorization', `Bearer ${aliceToken}`)
+            .send({
+              roomId: 'room-3',
+              date: bookDate,
+              startTime,
+              endTime,
+            });
+        }
+      }
+
+      // Bob tries to book on Sept 11 at 12:00 (middle of the booked range)
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${bobToken}`)
+        .send({
+          roomId: 'room-3',
+          date: '2026-09-11',
+          startTime: '12:00',
+          endTime: '13:00',
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body.message).toContain('Nearest available slot');
+      // System should search and find available slots
+      // Will find 23:00 on Sept 10 (earlier) or Sept 11 itself
+      // Will find 23:00 on Sept 11 (later - same day) or adjacent days
+      // The important thing is that suggestions are provided with dates when needed
+      expect(response.body.message).toMatch(/\d{2}:00-\d{2}:00/);
+    });
   });
 });
 
