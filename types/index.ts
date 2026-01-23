@@ -20,18 +20,25 @@ export interface Room {
  * Reservation Entity
  * ------------------
  * Represents a room reservation with time slot information.
+ * Supports flexible duration bookings and midnight-spanning reservations.
  *
  * TypeScript Concept: String Literal Comments
  * -------------------------------------------
  * The comments like "ISO date string" and "HH:MM format" are documentation
  * hints. In a more advanced setup, you could use branded types or template
  * literal types to enforce these formats at the type level.
+ *
+ * Midnight-Spanning Bookings:
+ * - When endTime < startTime (e.g., 23:00-02:00), the booking spans midnight
+ * - In this case, endDate = startDate + 1 day
+ * - For same-day bookings, startDate === endDate
  */
 export interface Reservation {
   reservationId: string;
   roomId: string;
   userId: string;
-  date: string; // ISO date string (YYYY-MM-DD)
+  startDate: string; // ISO date string (YYYY-MM-DD) - when the booking starts
+  endDate: string; // ISO date string (YYYY-MM-DD) - when the booking ends (can be next day for midnight-spanning)
   startTime: string; // 24-hour format (HH:MM)
   endTime: string; // 24-hour format (HH:MM)
 }
@@ -105,9 +112,10 @@ export interface LoginRequest {
 
 export interface CreateReservationRequest {
   roomId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
+  startDate: string; // ISO date string (YYYY-MM-DD) - when the booking starts
+  startTime: string; // 24-hour format (HH:MM)
+  endTime: string; // 24-hour format (HH:MM)
+  // Note: endDate is calculated automatically based on whether booking spans midnight
 }
 
 /**

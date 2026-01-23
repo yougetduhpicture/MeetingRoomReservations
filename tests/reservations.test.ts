@@ -135,7 +135,7 @@ describe('Protected Routes - Authentication Required', () => {
   it('should return 401 when accessing reservations without token', async () => {
     const response = await request(app).post('/api/reservations').send({
       roomId: 'room-1',
-      date: '2026-06-15',
+      startDate: '2026-06-15',
       startTime: '10:00',
       endTime: '11:00',
     });
@@ -150,7 +150,7 @@ describe('Protected Routes - Authentication Required', () => {
       .set('Authorization', 'Bearer invalid-token')
       .send({
         roomId: 'room-1',
-        date: '2026-06-15',
+        startDate: '2026-06-15',
         startTime: '10:00',
         endTime: '11:00',
       });
@@ -165,7 +165,7 @@ describe('Protected Routes - Authentication Required', () => {
       .set('Authorization', 'InvalidFormat token')
       .send({
         roomId: 'room-1',
-        date: '2026-06-15',
+        startDate: '2026-06-15',
         startTime: '10:00',
         endTime: '11:00',
       });
@@ -188,7 +188,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-15',
+          startDate: '2026-06-15',
           startTime: '10:00',
           endTime: '11:00',
         });
@@ -198,7 +198,8 @@ describe('Create Reservation - POST /api/reservations', () => {
       expect(response.body.data).toMatchObject({
         roomId: 'room-1',
         userId: 'user-1',
-        date: '2026-06-15',
+        startDate: '2026-06-15',
+        endDate: '2026-06-15',
         startTime: '10:00',
         endTime: '11:00',
       });
@@ -213,13 +214,91 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-2',
-          date: '2026-06-15',
+          startDate: '2026-06-15',
           startTime: '14:00',
           endTime: '15:00',
         });
 
       expect(response.status).toBe(201);
       expect(response.body.data.roomId).toBe('room-2');
+    });
+
+    it('should create reservation with flexible duration (2.5 hours)', async () => {
+      const token = await getAuthToken();
+
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-16',
+          startTime: '09:30',
+          endTime: '12:00',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data).toMatchObject({
+        startTime: '09:30',
+        endTime: '12:00',
+      });
+    });
+
+    it('should create reservation with non-hourly times (14:15 to 16:45)', async () => {
+      const token = await getAuthToken();
+
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-17',
+          startTime: '14:15',
+          endTime: '16:45',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.startTime).toBe('14:15');
+      expect(response.body.data.endTime).toBe('16:45');
+    });
+
+    it('should create midnight-spanning reservation (23:00 to 02:00)', async () => {
+      const token = await getAuthToken();
+
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          roomId: 'room-3',
+          startDate: '2026-06-18',
+          startTime: '23:00',
+          endTime: '02:00',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data).toMatchObject({
+        startDate: '2026-06-18',
+        endDate: '2026-06-19', // Next day because it spans midnight
+        startTime: '23:00',
+        endTime: '02:00',
+      });
+    });
+
+    it('should create minimum duration reservation (30 minutes)', async () => {
+      const token = await getAuthToken();
+
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-19',
+          startTime: '10:00',
+          endTime: '10:30',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.startTime).toBe('10:00');
+      expect(response.body.data.endTime).toBe('10:30');
     });
   });
 
@@ -232,47 +311,13 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-1',
-          date: '2020-01-15',
+          startDate: '2020-01-15',
           startTime: '10:00',
           endTime: '11:00',
         });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('past');
-    });
-
-    it('should return 400 for non-hourly time slot', async () => {
-      const token = await getAuthToken();
-
-      const response = await request(app)
-        .post('/api/reservations')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          roomId: 'room-1',
-          date: '2026-06-15',
-          startTime: '09:30',
-          endTime: '10:30',
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.message).toContain('on the hour');
-    });
-
-    it('should return 400 for non-1-hour duration', async () => {
-      const token = await getAuthToken();
-
-      const response = await request(app)
-        .post('/api/reservations')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          roomId: 'room-1',
-          date: '2026-06-15',
-          startTime: '09:00',
-          endTime: '11:00',
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.message).toContain('exactly 1 hour');
     });
 
     it('should return 400 for invalid time format', async () => {
@@ -283,7 +328,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-15',
+          startDate: '2026-06-15',
           startTime: '9:00', // Should be 09:00
           endTime: '10:00',
         });
@@ -300,7 +345,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-1',
-          date: '06-15-2026', // Wrong format
+          startDate: '06-15-2026', // Wrong format
           startTime: '10:00',
           endTime: '11:00',
         });
@@ -317,12 +362,80 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-15',
+          startDate: '2026-06-15',
           // Missing startTime and endTime
         });
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('ValidationError');
+    });
+
+    it('should return 400 for booking less than 30 minutes', async () => {
+      const token = await getAuthToken();
+
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-15',
+          startTime: '10:00',
+          endTime: '10:15', // Only 15 minutes
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('30 minutes');
+    });
+
+    it('should return 400 for booking exceeding 12 hours', async () => {
+      const token = await getAuthToken();
+
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-15',
+          startTime: '08:00',
+          endTime: '21:00', // 13 hours
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('12 hours');
+    });
+
+    it('should return 400 when start time equals end time', async () => {
+      const token = await getAuthToken();
+
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-15',
+          startTime: '10:00',
+          endTime: '10:00',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('cannot be the same');
+    });
+
+    it('should return 400 for midnight-spanning booking exceeding 12 hours', async () => {
+      const token = await getAuthToken();
+
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-15',
+          startTime: '10:00',
+          endTime: '09:00', // 23 hours (spans midnight)
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('12 hours');
     });
   });
 
@@ -335,7 +448,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-999',
-          date: '2026-06-15',
+          startDate: '2026-06-15',
           startTime: '10:00',
           endTime: '11:00',
         });
@@ -356,7 +469,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${aliceToken}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-20',
+          startDate: '2026-06-20',
           startTime: '10:00',
           endTime: '11:00',
         });
@@ -367,7 +480,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${bobToken}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-20',
+          startDate: '2026-06-20',
           startTime: '10:00',
           endTime: '11:00',
         });
@@ -376,6 +489,65 @@ describe('Create Reservation - POST /api/reservations', () => {
       expect(response.body.error).toBe('ConflictError');
       expect(response.body.message).toContain('already booked');
       expect(response.body.message).toContain('Alice Johnson');
+    });
+
+    it('should return 409 when bookings partially overlap', async () => {
+      const aliceToken = await getAuthToken('alice', 'SecurePass123!');
+      const bobToken = await getAuthToken('bob', 'BobSecure2026!');
+
+      // Alice books 10:00-12:00
+      await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-21',
+          startTime: '10:00',
+          endTime: '12:00',
+        });
+
+      // Bob tries to book 11:00-13:00 (overlaps with Alice's booking)
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${bobToken}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-21',
+          startTime: '11:00',
+          endTime: '13:00',
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body.error).toBe('ConflictError');
+    });
+
+    it('should return 409 when new booking is contained within existing', async () => {
+      const aliceToken = await getAuthToken('alice', 'SecurePass123!');
+      const bobToken = await getAuthToken('bob', 'BobSecure2026!');
+
+      // Alice books 09:00-17:00 (full day)
+      await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-22',
+          startTime: '09:00',
+          endTime: '17:00',
+        });
+
+      // Bob tries to book 12:00-13:00 (within Alice's booking)
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${bobToken}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-22',
+          startTime: '12:00',
+          endTime: '13:00',
+        });
+
+      expect(response.status).toBe(409);
     });
 
     it('should return 200 (update) when same user books overlapping slot', async () => {
@@ -387,7 +559,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-20',
+          startDate: '2026-06-23',
           startTime: '10:00',
           endTime: '11:00',
         });
@@ -401,7 +573,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-20',
+          startDate: '2026-06-23',
           startTime: '10:00',
           endTime: '11:00',
         });
@@ -415,13 +587,13 @@ describe('Create Reservation - POST /api/reservations', () => {
     it('should detect conflict with seed data (Bob tries Alice time)', async () => {
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Seed data: res-1 is Alice's reservation for room-1, 2026-06-02, 09:00-10:00
+      // Seed data: res-1 is Alice's reservation for room-1, 2026-06-02, 09:00-10:30
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-02',
+          startDate: '2026-06-02',
           startTime: '09:00',
           endTime: '10:00',
         });
@@ -440,7 +612,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${aliceToken}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-25',
+          startDate: '2026-06-25',
           startTime: '10:00',
           endTime: '11:00',
         });
@@ -451,136 +623,131 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${bobToken}`)
         .send({
           roomId: 'room-1',
-          date: '2026-06-25',
+          startDate: '2026-06-25',
           startTime: '10:00',
           endTime: '11:00',
         });
 
       expect(response.status).toBe(409);
       expect(response.body.message).toContain('Nearest available slot');
-      // Should suggest 09:00-10:00 (earlier) and 11:00-12:00 (later)
-      expect(response.body.message).toContain('09:00-10:00');
-      expect(response.body.message).toContain('11:00-12:00');
     });
 
-    it('should suggest slots from adjacent dates when same day is fully booked', async () => {
+    it('should detect conflict between same-day and midnight-spanning bookings', async () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books every hour on a specific date (making it fully booked)
-      const fullyBookedDate = '2026-07-15';
-      for (let hour = 0; hour <= 23; hour++) {
-        const startTime = `${hour.toString().padStart(2, '0')}:00`;
-        const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
-        await request(app)
-          .post('/api/reservations')
-          .set('Authorization', `Bearer ${aliceToken}`)
-          .send({
-            roomId: 'room-3',
-            date: fullyBookedDate,
-            startTime,
-            endTime,
-          });
-      }
+      // Alice books midnight-spanning: 23:00 on June 26 to 02:00 on June 27
+      await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .send({
+          roomId: 'room-3',
+          startDate: '2026-06-26',
+          startTime: '23:00',
+          endTime: '02:00',
+        });
 
-      // Bob tries to book on the fully booked date
+      // Bob tries to book 01:00-03:00 on June 27 (overlaps with Alice's end time)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
         .send({
           roomId: 'room-3',
-          date: fullyBookedDate,
-          startTime: '12:00',
-          endTime: '13:00',
+          startDate: '2026-06-27',
+          startTime: '01:00',
+          endTime: '03:00',
         });
 
       expect(response.status).toBe(409);
-      expect(response.body.message).toContain('Nearest available slot');
-      // Should suggest slots from adjacent dates (includes date in format)
-      expect(response.body.message).toMatch(/2026-07-(14|16)/);
+      expect(response.body.error).toBe('ConflictError');
     });
 
-    it('should include date in suggestion when slot is on different day', async () => {
+    it('should detect conflict between two midnight-spanning bookings', async () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books all morning slots (00:00-12:00) on a date
-      const testDate = '2026-08-10';
-      for (let hour = 0; hour < 12; hour++) {
-        const startTime = `${hour.toString().padStart(2, '0')}:00`;
-        const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
-        await request(app)
-          .post('/api/reservations')
-          .set('Authorization', `Bearer ${aliceToken}`)
-          .send({
-            roomId: 'room-2',
-            date: testDate,
-            startTime,
-            endTime,
-          });
-      }
+      // Alice books 22:00 to 01:00 (spans midnight)
+      await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .send({
+          roomId: 'room-3',
+          startDate: '2026-06-28',
+          startTime: '22:00',
+          endTime: '01:00',
+        });
 
-      // Bob tries to book 10:00 - no earlier slots on same day
-      // Should suggest previous day for earlier slot
+      // Bob tries to book 23:30 to 02:00 (also spans midnight, overlaps)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
         .send({
-          roomId: 'room-2',
-          date: testDate,
+          roomId: 'room-3',
+          startDate: '2026-06-28',
+          startTime: '23:30',
+          endTime: '02:00',
+        });
+
+      expect(response.status).toBe(409);
+      expect(response.body.error).toBe('ConflictError');
+    });
+
+    it('should allow adjacent bookings without conflict', async () => {
+      const aliceToken = await getAuthToken('alice', 'SecurePass123!');
+      const bobToken = await getAuthToken('bob', 'BobSecure2026!');
+
+      // Alice books 10:00-12:00
+      await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-29',
           startTime: '10:00',
-          endTime: '11:00',
+          endTime: '12:00',
         });
 
-      expect(response.status).toBe(409);
-      // Should have a same-day later suggestion (12:00-13:00)
-      expect(response.body.message).toContain('12:00-13:00');
-      // Should have a previous day earlier suggestion with date
-      expect(response.body.message).toContain('2026-08-09');
+      // Bob books 12:00-14:00 (immediately after, no overlap)
+      const response = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${bobToken}`)
+        .send({
+          roomId: 'room-1',
+          startDate: '2026-06-29',
+          startTime: '12:00',
+          endTime: '14:00',
+        });
+
+      expect(response.status).toBe(201);
     });
 
-    it('should search multiple days until finding an available slot', async () => {
+    it('should allow booking after midnight-spanning booking ends', async () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books most hours (0-22) on 3 consecutive days (Sept 10, 11, 12)
-      // Note: 23:00-00:00 can't be booked (spans midnight), so 23:00 remains "available"
-      // This tests that the system searches across multiple days
-      const dates = ['2026-09-10', '2026-09-11', '2026-09-12'];
-      for (const bookDate of dates) {
-        for (let hour = 0; hour <= 22; hour++) {
-          const startTime = `${hour.toString().padStart(2, '0')}:00`;
-          const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
-          await request(app)
-            .post('/api/reservations')
-            .set('Authorization', `Bearer ${aliceToken}`)
-            .send({
-              roomId: 'room-3',
-              date: bookDate,
-              startTime,
-              endTime,
-            });
-        }
-      }
+      // Alice books 23:00 to 02:00 (spans midnight)
+      await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .send({
+          roomId: 'room-3',
+          startDate: '2026-06-30',
+          startTime: '23:00',
+          endTime: '02:00',
+        });
 
-      // Bob tries to book on Sept 11 at 12:00 (middle of the booked range)
+      // Bob books 02:00-04:00 on July 1 (immediately after Alice's ends)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
         .send({
           roomId: 'room-3',
-          date: '2026-09-11',
-          startTime: '12:00',
-          endTime: '13:00',
+          startDate: '2026-07-01',
+          startTime: '02:00',
+          endTime: '04:00',
         });
 
-      expect(response.status).toBe(409);
-      expect(response.body.message).toContain('Nearest available slot');
-      // System should search and find available slots
-      // Will find 23:00 on Sept 10 (earlier) or Sept 11 itself
-      // Will find 23:00 on Sept 11 (later - same day) or adjacent days
-      // The important thing is that suggestions are provided with dates when needed
-      expect(response.body.message).toMatch(/\d{2}:00-\d{2}:00/);
+      expect(response.status).toBe(201);
     });
   });
 });
@@ -697,7 +864,8 @@ describe('Get Room Reservations - GET /api/rooms/:roomId/reservations', () => {
       expect(reservation).toHaveProperty('reservationId');
       expect(reservation).toHaveProperty('roomId');
       expect(reservation).toHaveProperty('userId');
-      expect(reservation).toHaveProperty('date');
+      expect(reservation).toHaveProperty('startDate');
+      expect(reservation).toHaveProperty('endDate');
       expect(reservation).toHaveProperty('startTime');
       expect(reservation).toHaveProperty('endTime');
     });

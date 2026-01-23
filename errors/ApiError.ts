@@ -134,6 +134,8 @@ export interface ConflictDetails {
     reservationId: string;
     userId: string;
     userName: string;
+    startDate: string;
+    endDate: string;
     startTime: string;
     endTime: string;
   };

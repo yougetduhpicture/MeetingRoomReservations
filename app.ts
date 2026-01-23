@@ -101,7 +101,10 @@ export function createApp(): Express {
    * ------------------
    * POST /api/reservations
    * Headers: Authorization: Bearer <token>
-   * Body: { roomId, date, startTime, endTime }
+   * Body: { roomId, startDate, startTime, endTime }
+   *
+   * Supports flexible durations (30min to 12hr) and midnight-spanning bookings.
+   * endDate is calculated automatically based on whether booking spans midnight.
    */
   app.post(
     '/api/reservations',

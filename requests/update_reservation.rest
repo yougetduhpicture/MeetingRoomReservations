@@ -2,8 +2,15 @@
 ### UPDATE RESERVATION (OVERLAP) REQUESTS
 ### ===========================================
 ### This demonstrates the overlap handling behavior:
-### - Same user overlapping → UPDATE existing reservation
-### - Different user overlapping → CONFLICT error (409)
+### - Same user overlapping -> UPDATE existing reservation
+### - Different user overlapping -> CONFLICT error (409)
+### ===========================================
+###
+### NEW FEATURES:
+### - Flexible booking durations (30 min to 12 hours)
+### - Any start/end time in HH:MM format
+### - Midnight-spanning bookings supported
+### - Conflict detection works across date boundaries
 ### ===========================================
 
 @baseUrl = http://localhost:3000/api
@@ -15,19 +22,19 @@
 ### -----------------------------------------
 ### SCENARIO: Same user creates overlapping reservation
 ### -----------------------------------------
-### Alice already has res-1: room-1, 2026-06-02, 09:00-10:00
-### If Alice tries to book room-1, 2026-06-02, 09:00-10:00 again,
+### Alice already has res-1: room-1, 2026-06-02, 09:00-10:30
+### If Alice tries to book an overlapping time for the same room,
 ### it should UPDATE (return 200) instead of creating a duplicate
 
 ### Step 1: First, let's see Alice's existing reservation
-### (res-1: Conference Room A, June 2, 2026, 09:00-10:00)
+### (res-1: Conference Room A, June 2, 2026, 09:00-10:30)
 
 GET {{baseUrl}}/rooms/room-1/reservations
 Authorization: Bearer {{aliceToken}}
 
 ###
 
-### Step 2: Alice creates overlapping reservation (same time slot)
+### Step 2: Alice creates overlapping reservation (overlaps with 09:00-10:30)
 ### This should UPDATE the existing reservation (res-1)
 ### Response: 200 with "reservation has been updated" message
 
@@ -37,39 +44,19 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-1",
-  "date": "2026-06-02",
-  "startTime": "09:00",
-  "endTime": "10:00"
+  "startDate": "2026-06-02",
+  "startTime": "09:30",
+  "endTime": "11:00"
 }
 
 ### -----------------------------------------
 ### SCENARIO: Different user creates overlapping reservation
 ### -----------------------------------------
-### Alice has a reservation at room-1, 2026-06-02, 09:00-10:00
-### Bob tries to book the same slot → should get 409 Conflict
+### Alice has a reservation at room-1, 2026-06-02, 09:00-10:30
+### Bob tries to book an overlapping slot -> should get 409 Conflict
 ### The error message includes nearest available time slots!
-### If the same day has no slots, it suggests slots from adjacent dates.
-###
-### Example response (same-day slots available):
-### {
-###   "error": "ConflictError",
-###   "message": "Conference Room A is already booked from 09:00-10:00 on 2026-06-02
-###              by Alice Johnson. Nearest available slots: 08:00-09:00 (earlier)
-###              or 10:00-11:00 (later).",
-###   "statusCode": 409
-### }
-###
-### Example response (no same-day slots, searching adjacent dates):
-### The system searches up to 30 days in each direction until finding available slots.
-### {
-###   "error": "ConflictError",
-###   "message": "Conference Room A is already booked from 09:00-10:00 on 2026-06-02
-###              by Alice Johnson. Nearest available slots: 2026-06-01 at 23:00-00:00
-###              or 2026-06-03 at 00:00-01:00.",
-###   "statusCode": 409
-### }
 
-### Bob tries to book Alice's slot (should fail - 409 with suggestions)
+### Bob tries to book 10:00-11:30 (overlaps with Alice's 09:00-10:30)
 
 POST {{baseUrl}}/reservations
 Content-Type: application/json
@@ -77,16 +64,16 @@ Authorization: Bearer {{bobToken}}
 
 {
   "roomId": "room-1",
-  "date": "2026-06-02",
-  "startTime": "09:00",
-  "endTime": "10:00"
+  "startDate": "2026-06-02",
+  "startTime": "10:00",
+  "endTime": "11:30"
 }
 
 ### -----------------------------------------
-### SCENARIO: Create reservation that overlaps with Bob's
+### SCENARIO: Conflict with partial overlap
 ### -----------------------------------------
-### Bob has res-2: room-1, 2026-06-02, 14:00-15:00
-### Alice tries to book the same slot → should get 409 Conflict
+### Bob has res-2: room-1, 2026-06-02, 14:00-16:00
+### Alice tries to book 15:00-17:00 (overlaps by 1 hour)
 
 POST {{baseUrl}}/reservations
 Content-Type: application/json
@@ -94,15 +81,15 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-1",
-  "date": "2026-06-02",
-  "startTime": "14:00",
-  "endTime": "15:00"
+  "startDate": "2026-06-02",
+  "startTime": "15:00",
+  "endTime": "17:00"
 }
 
 ### -----------------------------------------
 ### SCENARIO: Non-overlapping reservation (should succeed)
 ### -----------------------------------------
-### Book a different time slot on the same day
+### Book a different time slot on the same day (after Bob's 14:00-16:00)
 
 POST {{baseUrl}}/reservations
 Content-Type: application/json
@@ -110,7 +97,72 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-1",
-  "date": "2026-06-02",
-  "startTime": "11:00",
-  "endTime": "12:00"
+  "startDate": "2026-06-02",
+  "startTime": "16:00",
+  "endTime": "18:00"
+}
+
+### -----------------------------------------
+### SCENARIO: Midnight-spanning conflict
+### -----------------------------------------
+### First, Alice creates a midnight-spanning booking
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-3",
+  "startDate": "2026-06-20",
+  "startTime": "23:00",
+  "endTime": "02:00"
+}
+
+###
+
+### Bob tries to book 01:00-03:00 on June 21 (overlaps with Alice's end)
+### Should fail with 409 Conflict
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{bobToken}}
+
+{
+  "roomId": "room-3",
+  "startDate": "2026-06-21",
+  "startTime": "01:00",
+  "endTime": "03:00"
+}
+
+### -----------------------------------------
+### SCENARIO: Adjacent bookings (no conflict)
+### -----------------------------------------
+### Bob can book immediately after Alice's midnight-spanning booking ends
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{bobToken}}
+
+{
+  "roomId": "room-3",
+  "startDate": "2026-06-21",
+  "startTime": "02:00",
+  "endTime": "04:00"
+}
+
+### -----------------------------------------
+### SCENARIO: Two midnight-spanning bookings conflict
+### -----------------------------------------
+### Alice has 23:00-02:00 (June 20-21)
+### Bob tries 22:00-01:00 (June 20-21) - overlaps!
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{bobToken}}
+
+{
+  "roomId": "room-3",
+  "startDate": "2026-06-20",
+  "startTime": "22:00",
+  "endTime": "01:00"
 }

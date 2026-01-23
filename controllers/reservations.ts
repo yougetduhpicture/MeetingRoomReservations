@@ -44,11 +44,11 @@ export async function createReservationController(
       throw new UnauthorizedError('Authentication required');
     }
 
-    const { roomId, date, startTime, endTime } = req.body;
+    const { roomId, startDate, startTime, endTime } = req.body;
     const userId = req.user.userId;
 
     const result = await createNewReservation(
-      { roomId, date, startTime, endTime },
+      { roomId, startDate, startTime, endTime },
       userId
     );
 

@@ -5,48 +5,56 @@ import { Reservation } from '../types';
  * In-Memory Reservation Storage
  * -----------------------------
  * Seed data: 5 reservations in the first week of June 2026.
- * All times are full-hour slots (1 hour each).
+ * Includes examples of various booking durations.
+ *
+ * Note: startDate and endDate are the same for same-day bookings.
+ * For midnight-spanning bookings, endDate would be startDate + 1 day.
  */
 const reservations: Reservation[] = [
   {
     reservationId: 'res-1',
     roomId: 'room-1',
     userId: 'user-1', // Alice
-    date: '2026-06-02', // Tuesday
+    startDate: '2026-06-02', // Tuesday
+    endDate: '2026-06-02',
     startTime: '09:00',
-    endTime: '10:00',
+    endTime: '10:30', // 1.5 hour meeting
   },
   {
     reservationId: 'res-2',
     roomId: 'room-1',
     userId: 'user-2', // Bob
-    date: '2026-06-02', // Tuesday
+    startDate: '2026-06-02', // Tuesday
+    endDate: '2026-06-02',
     startTime: '14:00',
-    endTime: '15:00',
+    endTime: '16:00', // 2 hour meeting
   },
   {
     reservationId: 'res-3',
     roomId: 'room-2',
     userId: 'user-1', // Alice
-    date: '2026-06-03', // Wednesday
+    startDate: '2026-06-03', // Wednesday
+    endDate: '2026-06-03',
     startTime: '10:00',
-    endTime: '11:00',
+    endTime: '11:00', // 1 hour meeting
   },
   {
     reservationId: 'res-4',
     roomId: 'room-2',
     userId: 'user-2', // Bob
-    date: '2026-06-04', // Thursday
+    startDate: '2026-06-04', // Thursday
+    endDate: '2026-06-04',
     startTime: '13:00',
-    endTime: '14:00',
+    endTime: '14:30', // 1.5 hour meeting
   },
   {
     reservationId: 'res-5',
     roomId: 'room-3',
     userId: 'user-1', // Alice
-    date: '2026-06-05', // Friday
+    startDate: '2026-06-05', // Friday
+    endDate: '2026-06-05',
     startTime: '15:00',
-    endTime: '16:00',
+    endTime: '17:00', // 2 hour meeting
   },
 ];
 
@@ -88,8 +96,11 @@ export function getReservationsByUserId(userId: string): Reservation[] {
 }
 
 /**
- * Find reservations for a room on a specific date
- * ------------------------------------------------
+ * Find reservations for a room that overlap with a specific date
+ * --------------------------------------------------------------
+ * A reservation overlaps with a date if the date falls between
+ * the reservation's startDate and endDate (inclusive).
+ *
  * Used for conflict detection in the service layer.
  */
 export function findReservationsByRoomAndDate(
@@ -97,7 +108,28 @@ export function findReservationsByRoomAndDate(
   date: string
 ): Reservation[] {
   return reservations.filter(
-    (res) => res.roomId === roomId && res.date === date
+    (res) => res.roomId === roomId && res.startDate <= date && res.endDate >= date
+  );
+}
+
+/**
+ * Find reservations for a room within a date range
+ * -------------------------------------------------
+ * Returns all reservations that overlap with any date in the given range.
+ * Used for checking conflicts with midnight-spanning bookings.
+ */
+export function findReservationsByRoomAndDateRange(
+  roomId: string,
+  startDate: string,
+  endDate: string
+): Reservation[] {
+  return reservations.filter(
+    (res) =>
+      res.roomId === roomId &&
+      // Reservation overlaps with date range if:
+      // reservation starts before range ends AND reservation ends after range starts
+      res.startDate <= endDate &&
+      res.endDate >= startDate
   );
 }
 
@@ -177,23 +209,26 @@ export function resetReservations(): void {
       reservationId: 'res-1',
       roomId: 'room-1',
       userId: 'user-1',
-      date: '2026-06-02',
+      startDate: '2026-06-02',
+      endDate: '2026-06-02',
       startTime: '09:00',
-      endTime: '10:00',
+      endTime: '10:30',
     },
     {
       reservationId: 'res-2',
       roomId: 'room-1',
       userId: 'user-2',
-      date: '2026-06-02',
+      startDate: '2026-06-02',
+      endDate: '2026-06-02',
       startTime: '14:00',
-      endTime: '15:00',
+      endTime: '16:00',
     },
     {
       reservationId: 'res-3',
       roomId: 'room-2',
       userId: 'user-1',
-      date: '2026-06-03',
+      startDate: '2026-06-03',
+      endDate: '2026-06-03',
       startTime: '10:00',
       endTime: '11:00',
     },
@@ -201,17 +236,19 @@ export function resetReservations(): void {
       reservationId: 'res-4',
       roomId: 'room-2',
       userId: 'user-2',
-      date: '2026-06-04',
+      startDate: '2026-06-04',
+      endDate: '2026-06-04',
       startTime: '13:00',
-      endTime: '14:00',
+      endTime: '14:30',
     },
     {
       reservationId: 'res-5',
       roomId: 'room-3',
       userId: 'user-1',
-      date: '2026-06-05',
+      startDate: '2026-06-05',
+      endDate: '2026-06-05',
       startTime: '15:00',
-      endTime: '16:00',
+      endTime: '17:00',
     }
   );
 }

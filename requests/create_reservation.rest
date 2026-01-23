@@ -4,6 +4,13 @@
 ### IMPORTANT: First run a login request from login.rest
 ### and copy the token to the @token variable below
 ### ===========================================
+###
+### NEW FEATURES:
+### - Flexible booking durations (30 min to 12 hours)
+### - Any start/end time in HH:MM format (not just hourly)
+### - Midnight-spanning bookings (e.g., 23:00-02:00)
+### - endDate is calculated automatically
+### ===========================================
 
 @baseUrl = http://localhost:3000/api
 
@@ -14,7 +21,7 @@
 ### -----------------------------------------
 ### Create a valid reservation (should succeed - 201)
 ### -----------------------------------------
-### Creates a reservation for Conference Room A on June 10, 2026
+### Creates a 1-hour reservation for Conference Room A
 
 POST {{baseUrl}}/reservations
 Content-Type: application/json
@@ -22,14 +29,15 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-1",
-  "date": "2026-06-10",
+  "startDate": "2026-06-10",
   "startTime": "09:00",
   "endTime": "10:00"
 }
 
 ### -----------------------------------------
-### Create reservation for different room (should succeed - 201)
+### Create reservation with flexible duration (should succeed - 201)
 ### -----------------------------------------
+### 2.5 hour meeting
 
 POST {{baseUrl}}/reservations
 Content-Type: application/json
@@ -37,14 +45,15 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-2",
-  "date": "2026-06-10",
+  "startDate": "2026-06-10",
   "startTime": "14:00",
-  "endTime": "15:00"
+  "endTime": "16:30"
 }
 
 ### -----------------------------------------
-### Create reservation in afternoon (should succeed - 201)
+### Create reservation with non-hourly times (should succeed - 201)
 ### -----------------------------------------
+### Meeting from 14:15 to 16:45
 
 POST {{baseUrl}}/reservations
 Content-Type: application/json
@@ -52,9 +61,42 @@ Authorization: Bearer {{bobToken}}
 
 {
   "roomId": "room-3",
-  "date": "2026-06-11",
-  "startTime": "16:00",
-  "endTime": "17:00"
+  "startDate": "2026-06-11",
+  "startTime": "14:15",
+  "endTime": "16:45"
+}
+
+### -----------------------------------------
+### Create midnight-spanning reservation (should succeed - 201)
+### -----------------------------------------
+### Late night meeting from 23:00 to 02:00 (spans midnight)
+### Note: endDate will be automatically set to 2026-06-13
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-1",
+  "startDate": "2026-06-12",
+  "startTime": "23:00",
+  "endTime": "02:00"
+}
+
+### -----------------------------------------
+### Create minimum duration reservation (should succeed - 201)
+### -----------------------------------------
+### Quick 30-minute meeting (minimum allowed)
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-2",
+  "startDate": "2026-06-13",
+  "startTime": "10:00",
+  "endTime": "10:30"
 }
 
 ### -----------------------------------------
@@ -66,7 +108,7 @@ Content-Type: application/json
 
 {
   "roomId": "room-1",
-  "date": "2026-06-15",
+  "startDate": "2026-06-15",
   "startTime": "10:00",
   "endTime": "11:00"
 }
@@ -81,7 +123,7 @@ Authorization: Bearer invalid-token-here
 
 {
   "roomId": "room-1",
-  "date": "2026-06-15",
+  "startDate": "2026-06-15",
   "startTime": "10:00",
   "endTime": "11:00"
 }
@@ -96,14 +138,15 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-1",
-  "date": "2020-01-15",
+  "startDate": "2020-01-15",
   "startTime": "10:00",
   "endTime": "11:00"
 }
 
 ### -----------------------------------------
-### Create reservation with non-hourly time (should fail - 400)
+### Create reservation too short (should fail - 400)
 ### -----------------------------------------
+### Duration must be at least 30 minutes
 
 POST {{baseUrl}}/reservations
 Content-Type: application/json
@@ -111,15 +154,15 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-1",
-  "date": "2026-06-15",
-  "startTime": "09:30",
-  "endTime": "10:30"
+  "startDate": "2026-06-15",
+  "startTime": "09:00",
+  "endTime": "09:15"
 }
 
 ### -----------------------------------------
-### Create reservation with wrong duration (should fail - 400)
+### Create reservation too long (should fail - 400)
 ### -----------------------------------------
-### Duration is 2 hours, should be exactly 1 hour
+### Duration cannot exceed 12 hours
 
 POST {{baseUrl}}/reservations
 Content-Type: application/json
@@ -127,9 +170,9 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-1",
-  "date": "2026-06-15",
-  "startTime": "09:00",
-  "endTime": "11:00"
+  "startDate": "2026-06-15",
+  "startTime": "08:00",
+  "endTime": "21:00"
 }
 
 ### -----------------------------------------
@@ -142,7 +185,7 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-999",
-  "date": "2026-06-15",
+  "startDate": "2026-06-15",
   "startTime": "10:00",
   "endTime": "11:00"
 }
@@ -157,7 +200,7 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-1",
-  "date": "2026-06-15",
+  "startDate": "2026-06-15",
   "startTime": "9:00",
   "endTime": "10:00"
 }
@@ -172,5 +215,20 @@ Authorization: Bearer {{aliceToken}}
 
 {
   "roomId": "room-1",
-  "date": "2026-06-15"
+  "startDate": "2026-06-15"
+}
+
+### -----------------------------------------
+### Create reservation with same start and end time (should fail - 400)
+### -----------------------------------------
+
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+Authorization: Bearer {{aliceToken}}
+
+{
+  "roomId": "room-1",
+  "startDate": "2026-06-15",
+  "startTime": "10:00",
+  "endTime": "10:00"
 }

@@ -73,9 +73,46 @@ const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
+ * Maximum booking duration in hours
+ * Prevents unreasonably long bookings
+ */
+const MAX_BOOKING_DURATION_HOURS = 12;
+
+/**
+ * Convert time string to minutes since midnight
+ */
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+/**
+ * Calculate booking duration in minutes
+ * Handles both same-day and midnight-spanning bookings
+ */
+function calculateDurationMinutes(startTime: string, endTime: string): number {
+  const startMinutes = timeToMinutes(startTime);
+  const endMinutes = timeToMinutes(endTime);
+
+  if (endMinutes > startMinutes) {
+    // Same-day booking (e.g., 09:00 to 17:00)
+    return endMinutes - startMinutes;
+  } else {
+    // Midnight-spanning booking (e.g., 23:00 to 02:00)
+    // Duration = time until midnight + time after midnight
+    return (24 * 60 - startMinutes) + endMinutes;
+  }
+}
+
+/**
  * Create Reservation Schema
  * -------------------------
  * Validates the request body for creating a reservation.
+ *
+ * Supports:
+ * - Flexible booking durations (any start/end time, not just 1-hour slots)
+ * - Midnight-spanning bookings (when endTime < startTime)
+ * - Maximum duration of 12 hours
  *
  * Zod Concept: Custom Validation with .refine()
  * ---------------------------------------------
@@ -92,12 +129,12 @@ export const createReservationSchema = z
       })
       .min(1, 'Room ID cannot be empty'),
 
-    date: z
+    startDate: z
       .string({
-        required_error: 'Date is required',
-        invalid_type_error: 'Date must be a string',
+        required_error: 'Start date is required',
+        invalid_type_error: 'Start date must be a string',
       })
-      .regex(dateRegex, 'Date must be in YYYY-MM-DD format'),
+      .regex(dateRegex, 'Start date must be in YYYY-MM-DD format'),
 
     startTime: z
       .string({
@@ -121,37 +158,46 @@ export const createReservationSchema = z
    */
   .refine(
     (data) => {
-      // Validate that times are on the hour (e.g., 09:00, not 09:30)
-      const startMinutes = data.startTime.split(':')[1];
-      const endMinutes = data.endTime.split(':')[1];
-      return startMinutes === '00' && endMinutes === '00';
+      // Validate that the start date is valid (not just format, but actual date)
+      const date = new Date(data.startDate);
+      return !isNaN(date.getTime());
     },
     {
-      message: 'Reservations must start and end on the hour (e.g., 09:00, 14:00)',
-      path: ['startTime'], // Which field to attach the error to
+      message: 'Invalid start date',
+      path: ['startDate'],
     }
   )
   .refine(
     (data) => {
-      // Validate exactly 1 hour duration
-      const startHour = parseInt(data.startTime.split(':')[0], 10);
-      const endHour = parseInt(data.endTime.split(':')[0], 10);
-      return endHour - startHour === 1;
+      // Validate that start and end times are different
+      return data.startTime !== data.endTime;
     },
     {
-      message: 'Reservations must be exactly 1 hour long',
+      message: 'Start time and end time cannot be the same',
       path: ['endTime'],
     }
   )
   .refine(
     (data) => {
-      // Validate that the date is valid (not just format, but actual date)
-      const date = new Date(data.date);
-      return !isNaN(date.getTime());
+      // Validate maximum duration (12 hours)
+      const durationMinutes = calculateDurationMinutes(data.startTime, data.endTime);
+      const maxDurationMinutes = MAX_BOOKING_DURATION_HOURS * 60;
+      return durationMinutes <= maxDurationMinutes;
     },
     {
-      message: 'Invalid date',
-      path: ['date'],
+      message: `Booking duration cannot exceed ${MAX_BOOKING_DURATION_HOURS} hours`,
+      path: ['endTime'],
+    }
+  )
+  .refine(
+    (data) => {
+      // Validate minimum duration (at least 30 minutes)
+      const durationMinutes = calculateDurationMinutes(data.startTime, data.endTime);
+      return durationMinutes >= 30;
+    },
+    {
+      message: 'Booking must be at least 30 minutes long',
+      path: ['endTime'],
     }
   );
 

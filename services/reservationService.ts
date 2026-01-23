@@ -3,7 +3,7 @@ import {
   createReservation,
   deleteReservation,
   findReservationById,
-  findReservationsByRoomAndDate,
+  findReservationsByRoomAndDateRange,
   getReservationsByRoomId,
   updateReservation,
 } from '../models/reservation';
@@ -48,9 +48,9 @@ interface CreateReservationResult {
  * JavaScript Date objects can be tricky. We construct a Date from
  * the ISO date string and time, then compare to now.
  */
-function isTimeSlotInPast(date: string, startTime: string): boolean {
+function isTimeSlotInPast(startDate: string, startTime: string): boolean {
   // Construct full datetime string (assuming UTC for simplicity)
-  const dateTimeString = `${date}T${startTime}:00`;
+  const dateTimeString = `${startDate}T${startTime}:00`;
   const slotTime = new Date(dateTimeString);
   const now = new Date();
 
@@ -58,17 +58,39 @@ function isTimeSlotInPast(date: string, startTime: string): boolean {
 }
 
 /**
- * Convert time string to hour number
+ * Convert time string (HH:MM) to minutes since midnight
  */
-function timeToHour(time: string): number {
-  return parseInt(time.split(':')[0], 10);
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
 }
 
 /**
- * Convert hour number to time string (HH:00 format)
+ * Convert minutes to time string (HH:MM format)
  */
-function hourToTime(hour: number): string {
-  return `${hour.toString().padStart(2, '0')}:00`;
+function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60) % 24;
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Check if a booking spans midnight
+ * (when endTime is earlier than or equal to startTime in HH:MM format)
+ */
+function spansMidnight(startTime: string, endTime: string): boolean {
+  return timeToMinutes(endTime) <= timeToMinutes(startTime);
+}
+
+/**
+ * Calculate endDate based on startDate and times
+ * If booking spans midnight, endDate is the next day
+ */
+function calculateEndDate(startDate: string, startTime: string, endTime: string): string {
+  if (spansMidnight(startTime, endTime)) {
+    return getNextDate(startDate);
+  }
+  return startDate;
 }
 
 /**
@@ -103,29 +125,96 @@ function isDateInPast(date: string): boolean {
  * Slot suggestion with optional date (for adjacent day suggestions)
  */
 interface SlotSuggestion {
-  time: string; // e.g., "09:00-10:00"
+  time: string; // e.g., "09:00-10:30"
   date?: string; // e.g., "2026-06-03" (only set if different from requested date)
 }
 
 /**
- * Find available slots on a specific date for a room
+ * Interval representing a booked time period
  */
-function findAvailableSlotsOnDate(
+interface BookedInterval {
+  start: number; // minutes from midnight
+  end: number; // minutes from midnight (can be > 24*60 for midnight-spanning)
+}
+
+/**
+ * Get all booked intervals for a room on a specific date
+ * Returns intervals in minutes from midnight, handling midnight-spanning bookings
+ */
+function getBookedIntervalsOnDate(
   roomId: string,
   date: string
-): Set<number> {
-  const reservations = findReservationsByRoomAndDate(roomId, date);
-  const bookedHours = new Set(
-    reservations.map((res) => timeToHour(res.startTime))
-  );
+): BookedInterval[] {
+  const reservations = findReservationsByRoomAndDateRange(roomId, date, date);
+  const intervals: BookedInterval[] = [];
 
-  const availableHours = new Set<number>();
-  for (let hour = 0; hour <= 23; hour++) {
-    if (!bookedHours.has(hour)) {
-      availableHours.add(hour);
+  for (const res of reservations) {
+    const startMin = timeToMinutes(res.startTime);
+    const endMin = timeToMinutes(res.endTime);
+
+    if (res.startDate === date && res.endDate === date) {
+      // Same-day booking that starts and ends on this date
+      intervals.push({ start: startMin, end: endMin });
+    } else if (res.startDate === date && res.endDate !== date) {
+      // Booking starts on this date and spans to next day
+      intervals.push({ start: startMin, end: 24 * 60 });
+    } else if (res.startDate !== date && res.endDate === date) {
+      // Booking started on previous day and ends on this date
+      intervals.push({ start: 0, end: endMin });
     }
   }
-  return availableHours;
+
+  // Sort by start time
+  intervals.sort((a, b) => a.start - b.start);
+  return intervals;
+}
+
+/**
+ * Find available time windows on a specific date for a room
+ * Returns windows that could fit a booking of the specified duration
+ */
+function findAvailableWindowsOnDate(
+  roomId: string,
+  date: string,
+  durationMinutes: number
+): Array<{ start: number; end: number }> {
+  const bookedIntervals = getBookedIntervalsOnDate(roomId, date);
+  const windows: Array<{ start: number; end: number }> = [];
+
+  // Merge overlapping intervals
+  const mergedIntervals: BookedInterval[] = [];
+  for (const interval of bookedIntervals) {
+    if (mergedIntervals.length === 0 || mergedIntervals[mergedIntervals.length - 1].end < interval.start) {
+      mergedIntervals.push({ ...interval });
+    } else {
+      mergedIntervals[mergedIntervals.length - 1].end = Math.max(
+        mergedIntervals[mergedIntervals.length - 1].end,
+        interval.end
+      );
+    }
+  }
+
+  // Find gaps between booked intervals
+  let currentStart = 0;
+  for (const interval of mergedIntervals) {
+    if (interval.start > currentStart) {
+      const gapSize = interval.start - currentStart;
+      if (gapSize >= durationMinutes) {
+        windows.push({ start: currentStart, end: interval.start });
+      }
+    }
+    currentStart = Math.max(currentStart, interval.end);
+  }
+
+  // Check if there's space after the last booking until end of day
+  if (currentStart < 24 * 60) {
+    const gapSize = 24 * 60 - currentStart;
+    if (gapSize >= durationMinutes) {
+      windows.push({ start: currentStart, end: 24 * 60 });
+    }
+  }
+
+  return windows;
 }
 
 /**
@@ -138,32 +227,39 @@ const MAX_SEARCH_DAYS = 30;
  * Find the nearest available time slots before and after a given time
  *
  * Returns suggestions for alternative booking times when a conflict occurs.
+ * Suggests windows that can fit a booking of the specified duration.
  * First searches the same day, then iterates through previous/next days
  * until an available slot is found (up to MAX_SEARCH_DAYS).
  */
 function findNearestAvailableSlots(
   roomId: string,
   date: string,
-  attemptedStartHour: number
+  attemptedStartMinutes: number,
+  durationMinutes: number
 ): { before: SlotSuggestion | null; after: SlotSuggestion | null } {
-  // Get available hours on the requested date
-  const sameDayAvailable = findAvailableSlotsOnDate(roomId, date);
-
   let before: SlotSuggestion | null = null;
   let after: SlotSuggestion | null = null;
 
-  // Search backwards for nearest available slot before attempted time (same day)
-  for (let hour = attemptedStartHour - 1; hour >= 0; hour--) {
-    if (sameDayAvailable.has(hour)) {
-      before = { time: `${hourToTime(hour)}-${hourToTime(hour + 1)}` };
-      break;
+  // Get available windows on the requested date
+  const sameDayWindows = findAvailableWindowsOnDate(roomId, date, durationMinutes);
+
+  // Search for nearest available slot before attempted time (same day)
+  for (const window of sameDayWindows) {
+    // Window must end before or at the attempted start time
+    if (window.end <= attemptedStartMinutes && window.end - window.start >= durationMinutes) {
+      // Find the latest possible start time in this window
+      const latestStart = window.end - durationMinutes;
+      const endTime = minutesToTime(latestStart + durationMinutes);
+      before = { time: `${minutesToTime(latestStart)}-${endTime}` };
     }
   }
 
-  // Search forwards for nearest available slot after attempted time (same day)
-  for (let hour = attemptedStartHour + 1; hour <= 23; hour++) {
-    if (sameDayAvailable.has(hour)) {
-      after = { time: `${hourToTime(hour)}-${hourToTime(hour + 1)}` };
+  // Search for nearest available slot after attempted time (same day)
+  for (const window of sameDayWindows) {
+    // Window must start after the attempted start time
+    if (window.start > attemptedStartMinutes) {
+      const endTime = minutesToTime(window.start + durationMinutes);
+      after = { time: `${minutesToTime(window.start)}-${endTime}` };
       break;
     }
   }
@@ -176,18 +272,18 @@ function findNearestAvailableSlots(
       if (isDateInPast(searchDate)) {
         break; // Don't search past dates
       }
-      const dayAvailable = findAvailableSlotsOnDate(roomId, searchDate);
-      // Find the latest available slot on this day
-      for (let hour = 23; hour >= 0; hour--) {
-        if (dayAvailable.has(hour)) {
-          before = {
-            time: `${hourToTime(hour)}-${hourToTime(hour + 1)}`,
-            date: searchDate,
-          };
-          break;
-        }
+      const dayWindows = findAvailableWindowsOnDate(roomId, searchDate, durationMinutes);
+      if (dayWindows.length > 0) {
+        // Find the latest window on this day
+        const lastWindow = dayWindows[dayWindows.length - 1];
+        const latestStart = lastWindow.end - durationMinutes;
+        const endTime = minutesToTime(latestStart + durationMinutes);
+        before = {
+          time: `${minutesToTime(latestStart)}-${endTime}`,
+          date: searchDate,
+        };
+        break;
       }
-      if (before) break; // Found a slot, stop searching
     }
   }
 
@@ -196,18 +292,17 @@ function findNearestAvailableSlots(
     let searchDate = date;
     for (let day = 0; day < MAX_SEARCH_DAYS; day++) {
       searchDate = getNextDate(searchDate);
-      const dayAvailable = findAvailableSlotsOnDate(roomId, searchDate);
-      // Find the earliest available slot on this day
-      for (let hour = 0; hour <= 23; hour++) {
-        if (dayAvailable.has(hour)) {
-          after = {
-            time: `${hourToTime(hour)}-${hourToTime(hour + 1)}`,
-            date: searchDate,
-          };
-          break;
-        }
+      const dayWindows = findAvailableWindowsOnDate(roomId, searchDate, durationMinutes);
+      if (dayWindows.length > 0) {
+        // Find the earliest window on this day
+        const firstWindow = dayWindows[0];
+        const endTime = minutesToTime(firstWindow.start + durationMinutes);
+        after = {
+          time: `${minutesToTime(firstWindow.start)}-${endTime}`,
+          date: searchDate,
+        };
+        break;
       }
-      if (after) break; // Found a slot, stop searching
     }
   }
 
@@ -252,32 +347,62 @@ function buildSuggestionMessage(
 }
 
 /**
- * Check if two time slots overlap
- *
- * Two slots overlap if one starts before the other ends AND
- * ends after the other starts.
- *
- * For 1-hour slots, this simplifies to checking if the start times match.
+ * Convert a date-time to absolute minutes from a reference point
+ * This allows comparing times across different dates
  */
-function doTimeSlotsOverlap(
-  start1: string,
-  end1: string,
-  start2: string,
-  end2: string
+function dateTimeToAbsoluteMinutes(date: string, time: string): number {
+  const d = new Date(date);
+  // Days since epoch as base, plus minutes within the day
+  const daysSinceEpoch = Math.floor(d.getTime() / (24 * 60 * 60 * 1000));
+  return daysSinceEpoch * 24 * 60 + timeToMinutes(time);
+}
+
+/**
+ * Check if two reservations overlap in time
+ *
+ * Handles all cases:
+ * - Same-day bookings with flexible durations
+ * - Same-day vs midnight-spanning bookings
+ * - Midnight-spanning vs midnight-spanning bookings
+ *
+ * Two reservations overlap if their time ranges intersect on any date.
+ */
+function doReservationsOverlap(
+  res1StartDate: string,
+  res1EndDate: string,
+  res1StartTime: string,
+  res1EndTime: string,
+  res2StartDate: string,
+  res2EndDate: string,
+  res2StartTime: string,
+  res2EndTime: string
 ): boolean {
-  // Convert to minutes for easier comparison
-  const toMinutes = (time: string): number => {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
+  // Convert to absolute minutes for comparison
+  const res1Start = dateTimeToAbsoluteMinutes(res1StartDate, res1StartTime);
+  const res1End = dateTimeToAbsoluteMinutes(res1EndDate, res1EndTime);
+  const res2Start = dateTimeToAbsoluteMinutes(res2StartDate, res2StartTime);
+  const res2End = dateTimeToAbsoluteMinutes(res2EndDate, res2EndTime);
 
-  const start1Min = toMinutes(start1);
-  const end1Min = toMinutes(end1);
-  const start2Min = toMinutes(start2);
-  const end2Min = toMinutes(end2);
+  // Two intervals overlap if: start1 < end2 AND end1 > start2
+  return res1Start < res2End && res1End > res2Start;
+}
 
-  // Overlap exists if: start1 < end2 AND end1 > start2
-  return start1Min < end2Min && end1Min > start2Min;
+
+/**
+ * Calculate booking duration in minutes
+ * Handles both same-day and midnight-spanning bookings
+ */
+function calculateDurationMinutes(startTime: string, endTime: string): number {
+  const startMinutes = timeToMinutes(startTime);
+  const endMinutes = timeToMinutes(endTime);
+
+  if (endMinutes > startMinutes) {
+    // Same-day booking (e.g., 09:00 to 17:00)
+    return endMinutes - startMinutes;
+  } else {
+    // Midnight-spanning booking (e.g., 23:00 to 02:00)
+    return (24 * 60 - startMinutes) + endMinutes;
+  }
 }
 
 /**
@@ -289,6 +414,10 @@ function doTimeSlotsOverlap(
  * 3. User must exist
  * 4. No overlapping reservations (with special handling for same user)
  *
+ * Supports:
+ * - Flexible booking durations (not just 1-hour slots)
+ * - Midnight-spanning bookings (e.g., 23:00-02:00)
+ *
  * If the same user has an overlapping reservation, we UPDATE it.
  * If a different user has an overlapping reservation, we throw ConflictError.
  */
@@ -296,12 +425,24 @@ export async function createNewReservation(
   data: CreateReservationRequest,
   userId: string
 ): Promise<CreateReservationResult> {
-  const { roomId, date, startTime, endTime } = data;
+  const { roomId, startDate, startTime, endTime } = data;
 
-  logger.debug('Creating reservation', { roomId, date, startTime, userId });
+  // Calculate endDate (next day if booking spans midnight)
+  const endDate = calculateEndDate(startDate, startTime, endTime);
+  const durationMinutes = calculateDurationMinutes(startTime, endTime);
+
+  logger.debug('Creating reservation', {
+    roomId,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    durationMinutes,
+    userId,
+  });
 
   // Validate: Time slot must be in the future
-  if (isTimeSlotInPast(date, startTime)) {
+  if (isTimeSlotInPast(startDate, startTime)) {
     throw new ValidationError(
       'Cannot create a reservation in the past. Please select a future date and time.'
     );
@@ -321,9 +462,19 @@ export async function createNewReservation(
   }
 
   // Check for conflicting reservations
-  const existingReservations = findReservationsByRoomAndDate(roomId, date);
+  // Get all reservations that overlap with the date range of this booking
+  const existingReservations = findReservationsByRoomAndDateRange(roomId, startDate, endDate);
   const conflictingReservation = existingReservations.find((res) =>
-    doTimeSlotsOverlap(startTime, endTime, res.startTime, res.endTime)
+    doReservationsOverlap(
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      res.startDate,
+      res.endDate,
+      res.startTime,
+      res.endTime
+    )
   );
 
   if (conflictingReservation) {
@@ -340,6 +491,8 @@ export async function createNewReservation(
       });
 
       const updated = updateReservation(conflictingReservation.reservationId, {
+        startDate,
+        endDate,
         startTime,
         endTime,
       });
@@ -354,21 +507,29 @@ export async function createNewReservation(
       };
     } else {
       // Different user - find available alternatives and throw conflict error
-      const attemptedHour = timeToHour(startTime);
+      const attemptedStartMinutes = timeToMinutes(startTime);
       const { before, after } = findNearestAvailableSlots(
         roomId,
-        date,
-        attemptedHour
+        startDate,
+        attemptedStartMinutes,
+        durationMinutes
       );
       const suggestionMessage = buildSuggestionMessage(before, after);
 
+      // Format conflict message with date range for midnight-spanning
+      const dateInfo = conflictingReservation.startDate === conflictingReservation.endDate
+        ? `on ${conflictingReservation.startDate}`
+        : `from ${conflictingReservation.startDate} to ${conflictingReservation.endDate}`;
+
       throw new ConflictError(
-        `${room.name} is already booked from ${conflictingReservation.startTime}-${conflictingReservation.endTime} on ${date} by ${ownerName}.${suggestionMessage}`,
+        `${room.name} is already booked from ${conflictingReservation.startTime}-${conflictingReservation.endTime} ${dateInfo} by ${ownerName}.${suggestionMessage}`,
         {
           existingReservation: {
             reservationId: conflictingReservation.reservationId,
             userId: conflictingReservation.userId,
             userName: ownerName,
+            startDate: conflictingReservation.startDate,
+            endDate: conflictingReservation.endDate,
             startTime: conflictingReservation.startTime,
             endTime: conflictingReservation.endTime,
           },
@@ -381,7 +542,8 @@ export async function createNewReservation(
   const newReservation = createReservation({
     roomId,
     userId,
-    date,
+    startDate,
+    endDate,
     startTime,
     endTime,
   });
@@ -389,7 +551,8 @@ export async function createNewReservation(
   logger.info('Reservation created', {
     reservationId: newReservation.reservationId,
     roomId,
-    date,
+    startDate,
+    endDate,
     time: `${startTime}-${endTime}`,
   });
 
