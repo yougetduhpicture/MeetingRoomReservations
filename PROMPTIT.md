@@ -9266,3 +9266,80 @@ UPDATING THE README
                                                                                                                                                                               
   All tutorial-style comments explaining TypeScript concepts like "TypeScript Concept: Interface", "TypeScript Concept: Promise Return Types", etc. have been removed, leaving
    clean, production-ready code.
+
+-------------------------------
+REMOVING THE 30 day search limit
+-------------------------------
+
+   Nicely done! I noticed that the restriction of 30 days of search in terms of free times for a meeting room isn't necessary, since the user wants to know when they can      
+  book it not that there are no times in one month. I believe the infinite search scenario you suggested as a reason of this limit would never happen in practice since       
+  the bookings are made by the users. We won't be able to know what's the demand of these meeting rooms until the app goes to production anyway. And even then it's           
+  better to limit the amount of bookings one user can have at once than than the search. So I wish you to remove this limitation across all the files of this project.        
+  Make sure to also update the README.md                                                                                                                                      
+                                                                                                                                                                              
+⏺ Let me find and remove the 30-day search limit from the codebase.                                                                                                           
+                                                                                                                                                                              
+⏺ Search(pattern: "MAX_SEARCH_DAYS|30.*day|30.*search")                                                                                                                       
+  ⎿  Found 2 files (ctrl+o to expand)                                                                                                                                         
+                                                                                                                                                                              
+⏺ Read(services/reservationService.ts)                                                                                                                                        
+  ⎿  Read 75 lines                                                                                                                                                            
+                                                                                                                                                                              
+⏺ Now let me update the code to remove the 30-day limit. The "before" search will naturally stop when it hits the past, and the "after" search will continue until it finds a 
+  slot.                                                                                                                                                                       
+                                                                                                                                                                              
+⏺ Update(services/reservationService.ts)                                                                                                                                      
+  ⎿  Added 2 lines, removed 4 lines                                                                                                                                           
+      145    return windows;                                                                                                                                                  
+      146  }                                                                                                                                                                  
+      147                                                                                                                                                                     
+      148 -const MAX_SEARCH_DAYS = 30;                                                                                                                                        
+      149 -                                                                                                                                                                   
+      148  function findNearestAvailableSlots(                                                                                                                                
+      149    roomId: string,                                                                                                                                                  
+      150    date: string,                                                                                                                                                    
+     ...                                                                                                                                                                      
+      174                                                                                                                                                                     
+      175    if (!before) {                                                                                                                                                   
+      176      let searchDate = date;                                                                                                                                         
+      179 -    for (let day = 0; day < MAX_SEARCH_DAYS; day++) {                                                                                                              
+      177 +    while (true) {                                                                                                                                                 
+      178        searchDate = getPreviousDate(searchDate);                                                                                                                    
+      179        if (isDateInPast(searchDate)) {                                                                                                                              
+      180          break;                                                                                                                                                     
+     ...                                                                                                                                                                      
+      195                                                                                                                                                                     
+      196    if (!after) {                                                                                                                                                    
+      197      let searchDate = date;                                                                                                                                         
+      200 -    for (let day = 0; day < MAX_SEARCH_DAYS; day++) {                                                                                                              
+      198 +    while (true) {                                                                                                                                                 
+      199        searchDate = getNextDate(searchDate);                                                                                                                        
+      200        const dayWindows = findAvailableWindowsOnDate(roomId, searchDate, durationMinutes);                                                                          
+      201        if (dayWindows.length > 0) {                                                                                                                                 
+                                                                                                                                                                              
+⏺ Now let me check if this is mentioned in the README.md.                                                                                                                     
+                                                                                                                                                                              
+⏺ Search(pattern: "30|search|suggest|slot|available", path: "README.md", output_mode: "content")                                                                              
+  ⎿  Found 17 lines (ctrl+o to expand)                                                                                                                                        
+                                                                                                                                                                              
+⏺ The README doesn't specifically mention the 30-day limit, so no changes needed there. Let me run the tests to make sure everything still works.                             
+                                                                                                                                                                              
+⏺ Bash(npm test)                                                                                                                                                              
+  ⎿  > meeting-room-reservations@1.0.0 test                                                                                                                                   
+     > jest --verbose --runInBand                                                                                                                                             
+     PASS tests/reservations.test.ts (8.508 s)                                                                                                                                
+     … +74 lines (ctrl+o to expand)                                                                                                                                           
+                                                                                                                                                                              
+⏺ All 48 tests pass. The 30-day search limit has been removed from services/reservationService.ts.                                                                            
+                                                                                                                                                                              
+  Changes made:                                                                                                                                                               
+  - Removed the MAX_SEARCH_DAYS = 30 constant                                                                                                                                 
+  - Changed the "before" search from a for-loop with day limit to a while-loop that naturally stops when it reaches past dates (isDateInPast check)                           
+  - Changed the "after" search from a for-loop with day limit to a while-loop that continues until it finds an available slot                                                 
+                                                                                                                                                                              
+  The search behavior is now:                                                                                                                                                 
+  - Earlier slots: Searches backwards until it hits today (can't book in the past)                                                                                            
+  - Later slots: Searches forwards indefinitely until it finds an available slot                                                                                              
+                                                                                                                                                                              
+✻ Cogitated for 1m 42s     
+                                                                 

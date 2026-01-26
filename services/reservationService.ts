@@ -145,8 +145,6 @@ function findAvailableWindowsOnDate(
   return windows;
 }
 
-const MAX_SEARCH_DAYS = 30;
-
 function findNearestAvailableSlots(
   roomId: string,
   date: string,
@@ -176,7 +174,7 @@ function findNearestAvailableSlots(
 
   if (!before) {
     let searchDate = date;
-    for (let day = 0; day < MAX_SEARCH_DAYS; day++) {
+    while (true) {
       searchDate = getPreviousDate(searchDate);
       if (isDateInPast(searchDate)) {
         break;
@@ -197,7 +195,7 @@ function findNearestAvailableSlots(
 
   if (!after) {
     let searchDate = date;
-    for (let day = 0; day < MAX_SEARCH_DAYS; day++) {
+    while (true) {
       searchDate = getNextDate(searchDate);
       const dayWindows = findAvailableWindowsOnDate(roomId, searchDate, durationMinutes);
       if (dayWindows.length > 0) {
