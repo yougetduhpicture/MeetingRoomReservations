@@ -2,31 +2,12 @@ import request from 'supertest';
 import { createApp } from '../app';
 import { Express } from 'express';
 
-/**
- * TypeScript + Jest Testing
- * -------------------------
- * Supertest allows us to test Express apps without starting a real server.
- * We import the app factory, create a fresh instance for each test suite,
- * and make HTTP requests against it.
- *
- * TypeScript Concept: Test Types
- * ------------------------------
- * @types/jest and @types/supertest provide types for test utilities.
- * The 'describe', 'it', 'expect', 'beforeAll', etc. are globally available.
- */
-
 let app: Express;
 
-// Create fresh app instance before all tests
 beforeAll(() => {
   app = createApp();
 });
 
-/**
- * Helper function to login and get a token
- * ----------------------------------------
- * Many tests need authentication, so this helper streamlines the process.
- */
 async function getAuthToken(
   username: string = 'alice',
   password: string = 'SecurePass123!'
@@ -37,10 +18,6 @@ async function getAuthToken(
 
   return response.body.data.token as string;
 }
-
-// ==============================================
-// AUTHENTICATION TESTS
-// ==============================================
 
 describe('Authentication - POST /api/login', () => {
   describe('Successful Login', () => {
@@ -174,10 +151,6 @@ describe('Protected Routes - Authentication Required', () => {
   });
 });
 
-// ==============================================
-// RESERVATION CREATION TESTS
-// ==============================================
-
 describe('Create Reservation - POST /api/reservations', () => {
   describe('Successful Creation', () => {
     it('should return 201 for valid reservation', async () => {
@@ -277,7 +250,7 @@ describe('Create Reservation - POST /api/reservations', () => {
       expect(response.status).toBe(201);
       expect(response.body.data).toMatchObject({
         startDate: '2026-06-18',
-        endDate: '2026-06-19', // Next day because it spans midnight
+        endDate: '2026-06-19',
         startTime: '23:00',
         endTime: '02:00',
       });
@@ -329,7 +302,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .send({
           roomId: 'room-1',
           startDate: '2026-06-15',
-          startTime: '9:00', // Should be 09:00
+          startTime: '9:00',
           endTime: '10:00',
         });
 
@@ -345,7 +318,7 @@ describe('Create Reservation - POST /api/reservations', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           roomId: 'room-1',
-          startDate: '06-15-2026', // Wrong format
+          startDate: '06-15-2026',
           startTime: '10:00',
           endTime: '11:00',
         });
@@ -363,7 +336,6 @@ describe('Create Reservation - POST /api/reservations', () => {
         .send({
           roomId: 'room-1',
           startDate: '2026-06-15',
-          // Missing startTime and endTime
         });
 
       expect(response.status).toBe(400);
@@ -380,7 +352,7 @@ describe('Create Reservation - POST /api/reservations', () => {
           roomId: 'room-1',
           startDate: '2026-06-15',
           startTime: '10:00',
-          endTime: '10:15', // Only 15 minutes
+          endTime: '10:15',
         });
 
       expect(response.status).toBe(400);
@@ -397,7 +369,7 @@ describe('Create Reservation - POST /api/reservations', () => {
           roomId: 'room-1',
           startDate: '2026-06-15',
           startTime: '08:00',
-          endTime: '21:00', // 13 hours
+          endTime: '21:00',
         });
 
       expect(response.status).toBe(400);
@@ -431,7 +403,7 @@ describe('Create Reservation - POST /api/reservations', () => {
           roomId: 'room-1',
           startDate: '2026-06-15',
           startTime: '10:00',
-          endTime: '09:00', // 23 hours (spans midnight)
+          endTime: '09:00',
         });
 
       expect(response.status).toBe(400);
@@ -463,7 +435,6 @@ describe('Create Reservation - POST /api/reservations', () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books a slot
       await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${aliceToken}`)
@@ -474,7 +445,6 @@ describe('Create Reservation - POST /api/reservations', () => {
           endTime: '11:00',
         });
 
-      // Bob tries to book the same slot
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
@@ -495,7 +465,6 @@ describe('Create Reservation - POST /api/reservations', () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books 10:00-12:00
       await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${aliceToken}`)
@@ -506,7 +475,6 @@ describe('Create Reservation - POST /api/reservations', () => {
           endTime: '12:00',
         });
 
-      // Bob tries to book 11:00-13:00 (overlaps with Alice's booking)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
@@ -525,7 +493,6 @@ describe('Create Reservation - POST /api/reservations', () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books 09:00-17:00 (full day)
       await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${aliceToken}`)
@@ -536,7 +503,6 @@ describe('Create Reservation - POST /api/reservations', () => {
           endTime: '17:00',
         });
 
-      // Bob tries to book 12:00-13:00 (within Alice's booking)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
@@ -553,7 +519,6 @@ describe('Create Reservation - POST /api/reservations', () => {
     it('should return 200 (update) when same user books overlapping slot', async () => {
       const token = await getAuthToken();
 
-      // Alice books a slot
       const first = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${token}`)
@@ -567,7 +532,6 @@ describe('Create Reservation - POST /api/reservations', () => {
       expect(first.status).toBe(201);
       const reservationId = first.body.data.reservationId;
 
-      // Alice books the same slot again (should update)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${token}`)
@@ -580,14 +544,12 @@ describe('Create Reservation - POST /api/reservations', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toContain('updated');
-      // Should keep the same reservation ID
       expect(response.body.data.reservationId).toBe(reservationId);
     });
 
     it('should detect conflict with seed data (Bob tries Alice time)', async () => {
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Seed data: res-1 is Alice's reservation for room-1, 2026-06-02, 09:00-10:30
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
@@ -606,7 +568,6 @@ describe('Create Reservation - POST /api/reservations', () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books 10:00-11:00
       await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${aliceToken}`)
@@ -617,7 +578,6 @@ describe('Create Reservation - POST /api/reservations', () => {
           endTime: '11:00',
         });
 
-      // Bob tries to book the same slot - should get suggestions
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
@@ -636,7 +596,6 @@ describe('Create Reservation - POST /api/reservations', () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books midnight-spanning: 23:00 on June 26 to 02:00 on June 27
       await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${aliceToken}`)
@@ -647,7 +606,6 @@ describe('Create Reservation - POST /api/reservations', () => {
           endTime: '02:00',
         });
 
-      // Bob tries to book 01:00-03:00 on June 27 (overlaps with Alice's end time)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
@@ -666,7 +624,6 @@ describe('Create Reservation - POST /api/reservations', () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books 22:00 to 01:00 (spans midnight)
       await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${aliceToken}`)
@@ -677,7 +634,6 @@ describe('Create Reservation - POST /api/reservations', () => {
           endTime: '01:00',
         });
 
-      // Bob tries to book 23:30 to 02:00 (also spans midnight, overlaps)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
@@ -696,7 +652,6 @@ describe('Create Reservation - POST /api/reservations', () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books 10:00-12:00
       await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${aliceToken}`)
@@ -707,7 +662,6 @@ describe('Create Reservation - POST /api/reservations', () => {
           endTime: '12:00',
         });
 
-      // Bob books 12:00-14:00 (immediately after, no overlap)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
@@ -725,7 +679,6 @@ describe('Create Reservation - POST /api/reservations', () => {
       const aliceToken = await getAuthToken('alice', 'SecurePass123!');
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // Alice books 23:00 to 02:00 (spans midnight)
       await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${aliceToken}`)
@@ -736,7 +689,6 @@ describe('Create Reservation - POST /api/reservations', () => {
           endTime: '02:00',
         });
 
-      // Bob books 02:00-04:00 on July 1 (immediately after Alice's ends)
       const response = await request(app)
         .post('/api/reservations')
         .set('Authorization', `Bearer ${bobToken}`)
@@ -752,16 +704,11 @@ describe('Create Reservation - POST /api/reservations', () => {
   });
 });
 
-// ==============================================
-// RESERVATION DELETION TESTS
-// ==============================================
-
 describe('Delete Reservation - DELETE /api/reservations/:id', () => {
   describe('Successful Deletion', () => {
     it('should return 204 when user deletes own reservation', async () => {
       const token = await getAuthToken();
 
-      // res-1 belongs to Alice (user-1)
       const response = await request(app)
         .delete('/api/reservations/res-1')
         .set('Authorization', `Bearer ${token}`);
@@ -772,7 +719,6 @@ describe('Delete Reservation - DELETE /api/reservations/:id', () => {
     it('should return 204 when Bob deletes his own reservation', async () => {
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // res-2 belongs to Bob (user-2)
       const response = await request(app)
         .delete('/api/reservations/res-2')
         .set('Authorization', `Bearer ${bobToken}`);
@@ -785,7 +731,6 @@ describe('Delete Reservation - DELETE /api/reservations/:id', () => {
     it('should return 403 when user tries to delete another user reservation', async () => {
       const bobToken = await getAuthToken('bob', 'BobSecure2026!');
 
-      // res-1 belongs to Alice, not Bob
       const response = await request(app)
         .delete('/api/reservations/res-1')
         .set('Authorization', `Bearer ${bobToken}`);
@@ -816,10 +761,6 @@ describe('Delete Reservation - DELETE /api/reservations/:id', () => {
   });
 });
 
-// ==============================================
-// GET RESERVATIONS TESTS
-// ==============================================
-
 describe('Get Room Reservations - GET /api/rooms/:roomId/reservations', () => {
   describe('Successful Retrieval', () => {
     it('should return 200 with reservations for valid room', async () => {
@@ -832,14 +773,12 @@ describe('Get Room Reservations - GET /api/rooms/:roomId/reservations', () => {
       expect(response.status).toBe(200);
       expect(response.body.message).toContain('reservation');
       expect(Array.isArray(response.body.data)).toBe(true);
-      // Seed data has 2 reservations for room-1
       expect(response.body.data.length).toBe(2);
     });
 
     it('should return 200 with empty array for room with no reservations', async () => {
       const token = await getAuthToken();
 
-      // First delete all reservations for room-3
       await request(app)
         .delete('/api/reservations/res-5')
         .set('Authorization', `Bearer ${token}`);
@@ -893,10 +832,6 @@ describe('Get Room Reservations - GET /api/rooms/:roomId/reservations', () => {
   });
 });
 
-// ==============================================
-// HEALTH CHECK TEST
-// ==============================================
-
 describe('Health Check - GET /api/health', () => {
   it('should return 200 with healthy status', async () => {
     const response = await request(app).get('/api/health');
@@ -906,10 +841,6 @@ describe('Health Check - GET /api/health', () => {
     expect(response.body.data).toHaveProperty('timestamp');
   });
 });
-
-// ==============================================
-// 404 NOT FOUND TEST
-// ==============================================
 
 describe('Not Found Handler', () => {
   it('should return 404 for unknown endpoints', async () => {

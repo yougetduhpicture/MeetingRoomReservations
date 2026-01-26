@@ -472,6 +472,7 @@ The project uses TypeScript's strict mode with additional checks:
 - [ ] **Rate Limiting** - Prevent API abuse
 - [ ] **OpenAPI/Swagger** - Interactive API documentation
 - [ ] **Docker** - Containerization for deployment
+- [ ] **Production Logger** - Winston or Pino for structured logging
 
 ## Known Limitations
 
@@ -479,6 +480,7 @@ The project uses TypeScript's strict mode with additional checks:
 2. **Single Instance** - Not designed for horizontal scaling without a database
 3. **No User Registration** - Only seeded users can authenticate
 4. **UTC Only** - No timezone handling (all times assumed UTC)
+5. **Synchronous Password Hashing** - Uses `bcrypt.hashSync()` for seed data; production should use async initialization to avoid blocking the event loop
 
 ## Scripts Reference
 

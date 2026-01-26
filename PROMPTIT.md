@@ -6505,3 +6505,2764 @@ UPDATING THE README
     - Updated conflict response to show the new suggestion feature                                                                                                            
   3. GET /api/rooms/:roomId/reservations - Updated response to show startDate/endDate fields                                                                                  
   4. Known Limitations - Removed the "1-Hour Slots Only" limitation since it no longer applies                            
+
+  --------------------
+  REMOVE TUTORIAL COMMENTS
+  --------------------
+
+  I've read all the files. There are a lot of educational/tutorial comments explaining TypeScript concepts that need to be removed for production. Let me clean them up file  
+  by file.                                                                                                                                                                    
+                                                                                                                                                                              
+⏺ Write(index.ts)                                                                                                                                                             
+  ⎿  Removed 22 lines                                                                                                                                                         
+       2  import config from './utils/config';                                                                                                                                
+       3  import logger from './utils/logger';                                                                                                                                
+       4                                                                                                                                                                      
+       5 -/**                                                                                                                                                                 
+       6 - * Server Entry Point                                                                                                                                               
+       7 - * ------------------                                                                                                                                               
+       8 - * This file is the entry point for the application. It:                                                                                                            
+       9 - * 1. Creates the Express app                                                                                                                                       
+      10 - * 2. Starts listening on the configured port                                                                                                                       
+      11 - * 3. Logs startup information                                                                                                                                      
+      12 - *                                                                                                                                                                  
+      13 - * Why Separate from app.ts?                                                                                                                                        
+      14 - * -------------------------                                                                                                                                        
+      15 - * - app.ts exports the app for testing (without starting a server)                                                                                                 
+      16 - * - index.ts actually starts the server                                                                                                                            
+      17 - * - This separation allows Supertest to import the app without                                                                                                     
+      18 - *   starting a real HTTP server                                                                                                                                    
+      19 - */                                                                                                                                                                 
+      20 -                                                                                                                                                                    
+       5  const app = createApp();                                                                                                                                            
+       6                                                                                                                                                                      
+       7  app.listen(config.PORT, () => {                                                                                                                                     
+     ...                                                                                                                                                                      
+      26    }                                                                                                                                                                 
+      27  });                                                                                                                                                                 
+      28                                                                                                                                                                      
+      45 -/**                                                                                                                                                                 
+      46 - * TypeScript Concept: Process Event Handlers                                                                                                                       
+      47 - * ------------------------------------------                                                                                                                       
+      48 - * These handlers catch unhandled errors and rejections at the process level.                                                                                       
+      49 - * Without them, the Node.js process might crash silently.                                                                                                          
+      50 - */                                                                                                                                                                 
+      29  process.on('uncaughtException', (error) => {                                                                                                                        
+      30    logger.error('Uncaught exception', { error: error.message });                                                                                                     
+      31    process.exit(1);                                                                                                                                                  
+                                                                                                                                                                              
+⏺ Write(app.ts)                                                                                                                                                               
+  ⎿  Removed 86 lines                                                                                                                                                         
+      1  import express, { Express } from 'express';                                                                                                                          
+      2  import cors from 'cors';                                                                                                                                             
+      3                                                                                                                                                                       
+      4 -// Middleware                                                                                                                                                        
+      4  import {                                                                                                                                                             
+      5    authenticate,                                                                                                                                                      
+      6    validate,                                                                                                                                                          
+     ...                                                                                                                                                                      
+       9    notFoundHandler,                                                                                                                                                  
+      10  } from './utils/middleware';                                                                                                                                        
+      11                                                                                                                                                                      
+      13 -// Validators                                                                                                                                                       
+      12  import {                                                                                                                                                            
+      13    loginSchema,                                                                                                                                                      
+      14    createReservationSchema,                                                                                                                                          
+     ...                                                                                                                                                                      
+      16    roomIdSchema,                                                                                                                                                     
+      17  } from './validators/reservationValidator';                                                                                                                         
+      18                                                                                                                                                                      
+      21 -// Controllers                                                                                                                                                      
+      19  import { loginController } from './controllers/login';                                                                                                              
+      20  import {                                                                                                                                                            
+      21    createReservationController,                                                                                                                                      
+     ...                                                                                                                                                                      
+      23  } from './controllers/reservations';                                                                                                                                
+      24  import { getRoomReservationsController } from './controllers/rooms';                                                                                                
+      25                                                                                                                                                                      
+      29 -/**                                                                                                                                                                 
+      30 - * Express Application Factory                                                                                                                                      
+      31 - * ---------------------------                                                                                                                                      
+      32 - * This function creates and configures the Express application.                                                                                                    
+      33 - *                                                                                                                                                                  
+      34 - * Why a Factory Function?                                                                                                                                          
+      35 - * -----------------------                                                                                                                                          
+      36 - * 1. Testing: We can create fresh app instances for each test                                                                                                      
+      37 - * 2. Configuration: We can pass different configs for different environments                                                                                       
+      38 - * 3. Separation: Keeps app setup separate from server startup                                                                                                      
+      39 - *                                                                                                                                                                  
+      40 - * TypeScript Concept: Function Return Types                                                                                                                        
+      41 - * -----------------------------------------                                                                                                                        
+      42 - * ': Express' declares that this function returns an Express app instance.                                                                                         
+      43 - * This helps with IDE autocompletion and catches mistakes.                                                                                                         
+      44 - */                                                                                                                                                                 
+      26  export function createApp(): Express {                                                                                                                              
+      27    const app = express();                                                                                                                                            
+      28                                                                                                                                                                      
+      48 -  // ---------------------                                                                                                                                          
+      49 -  // Global Middleware                                                                                                                                              
+      50 -  // ---------------------                                                                                                                                          
+      51 -                                                                                                                                                                    
+      52 -  // Parse JSON request bodies                                                                                                                                      
+      29    app.use(express.json());                                                                                                                                          
+      54 -                                                                                                                                                                    
+      55 -  // Enable CORS for all origins (configure appropriately in production)                                                                                            
+      30    app.use(cors());                                                                                                                                                  
+      57 -                                                                                                                                                                    
+      58 -  // Log all incoming requests                                                                                                                                      
+      31    app.use(requestLogger);                                                                                                                                           
+      32                                                                                                                                                                      
+      61 -  // ---------------------                                                                                                                                          
+      62 -  // Public Routes                                                                                                                                                  
+      63 -  // ---------------------                                                                                                                                          
+      64 -                                                                                                                                                                    
+      65 -  /**                                                                                                                                                               
+      66 -   * Health Check Endpoint                                                                                                                                          
+      67 -   * ---------------------                                                                                                                                          
+      68 -   * Useful for load balancers and monitoring systems.                                                                                                              
+      69 -   */                                                                                                                                                               
+      33    app.get('/api/health', (_req, res) => {                                                                                                                           
+      34      res.status(200).json({                                                                                                                                          
+      35        message: 'API is running',                                                                                                                                    
+     ...                                                                                                                                                                      
+       37      });                                                                                                                                                            
+       38    });                                                                                                                                                              
+       39                                                                                                                                                                     
+       77 -  /**                                                                                                                                                              
+       78 -   * Login Endpoint                                                                                                                                                
+       79 -   * --------------                                                                                                                                                
+       80 -   * POST /api/login                                                                                                                                               
+       81 -   * Body: { username: string, password: string }                                                                                                                  
+       82 -   * Returns: { message, data: { token, user } }                                                                                                                   
+       83 -   *                                                                                                                                                               
+       84 -   * TypeScript Concept: Middleware Chain Types                                                                                                                    
+       85 -   * ------------------------------------------                                                                                                                    
+       86 -   * Express middleware can be chained. Each middleware processes the                                                                                              
+       87 -   * request and either responds or calls next() to continue.                                                                                                      
+       88 -   *                                                                                                                                                               
+       89 -   * validate(loginSchema) returns a middleware function that validates                                                                                            
+       90 -   * req.body against the loginSchema, then calls next() if valid.                                                                                                 
+       91 -   */                                                                                                                                                              
+       40    app.post('/api/login', validate(loginSchema), loginController);                                                                                                  
+       41                                                                                                                                                                     
+       94 -  // ---------------------                                                                                                                                         
+       95 -  // Protected Routes                                                                                                                                              
+       96 -  // ---------------------                                                                                                                                         
+       97 -  // All routes below require authentication                                                                                                                       
+       98 -                                                                                                                                                                   
+       99 -  /**                                                                                                                                                              
+      100 -   * Create Reservation                                                                                                                                            
+      101 -   * ------------------                                                                                                                                            
+      102 -   * POST /api/reservations                                                                                                                                        
+      103 -   * Headers: Authorization: Bearer <token>                                                                                                                        
+      104 -   * Body: { roomId, startDate, startTime, endTime }                                                                                                               
+      105 -   *                                                                                                                                                               
+      106 -   * Supports flexible durations (30min to 12hr) and midnight-spanning bookings.                                                                                   
+      107 -   * endDate is calculated automatically based on whether booking spans midnight.                                                                                  
+      108 -   */                                                                                                                                                              
+       42    app.post(                                                                                                                                                        
+       43      '/api/reservations',                                                                                                                                           
+       44      authenticate,                                                                                                                                                  
+     ...                                                                                                                                                                      
+       46      createReservationController                                                                                                                                    
+       47    );                                                                                                                                                               
+       48                                                                                                                                                                     
+      116 -  /**                                                                                                                                                              
+      117 -   * Delete Reservation                                                                                                                                            
+      118 -   * ------------------                                                                                                                                            
+      119 -   * DELETE /api/reservations/:id                                                                                                                                  
+      120 -   * Headers: Authorization: Bearer <token>                                                                                                                        
+      121 -   */                                                                                                                                                              
+       49    app.delete(                                                                                                                                                      
+       50      '/api/reservations/:id',                                                                                                                                       
+       51      authenticate,                                                                                                                                                  
+     ...                                                                                                                                                                      
+       53      deleteReservationController                                                                                                                                    
+       54    );                                                                                                                                                               
+       55                                                                                                                                                                     
+      129 -  /**                                                                                                                                                              
+      130 -   * Get Room Reservations                                                                                                                                         
+      131 -   * ---------------------                                                                                                                                         
+      132 -   * GET /api/rooms/:roomId/reservations                                                                                                                           
+      133 -   * Headers: Authorization: Bearer <token>                                                                                                                        
+      134 -   */                                                                                                                                                              
+       56    app.get(                                                                                                                                                         
+       57      '/api/rooms/:roomId/reservations',                                                                                                                             
+       58      authenticate,                                                                                                                                                  
+     ...                                                                                                                                                                      
+       60      getRoomReservationsController                                                                                                                                  
+       61    );                                                                                                                                                               
+       62                                                                                                                                                                     
+      142 -  // ---------------------                                                                                                                                         
+      143 -  // Error Handling                                                                                                                                                
+      144 -  // ---------------------                                                                                                                                         
+      145 -                                                                                                                                                                   
+      146 -  // Catch requests to non-existent routes                                                                                                                         
+       63    app.use(notFoundHandler);                                                                                                                                        
+      148 -                                                                                                                                                                   
+      149 -  // Global error handler (must be last)                                                                                                                           
+       64    app.use(errorHandler);                                                                                                                                           
+       65                                                                                                                                                                     
+       66    return app;                                                                                                                                                      
+                                                                                                                                                                              
+⏺ Write(utils/config.ts)                                                                                                                                                      
+  ⎿  Removed 24 lines                                                                                                                                                         
+       1  import dotenv from 'dotenv';                                                                                                                                        
+       2                                                                                                                                                                      
+       3 -// Load environment variables from .env file                                                                                                                        
+       3  dotenv.config();                                                                                                                                                    
+       4                                                                                                                                                                      
+       6 -/**                                                                                                                                                                 
+       7 - * TypeScript Concept: Interface                                                                                                                                    
+       8 - * -----------------------------                                                                                                                                    
+       9 - * An interface defines the "shape" of an object - what properties it must have                                                                                     
+      10 - * and what types those properties must be. Think of it like a contract that                                                                                        
+      11 - * objects must follow.                                                                                                                                             
+      12 - *                                                                                                                                                                  
+      13 - * Unlike JavaScript where you might accidentally access config.PROT (typo),                                                                                        
+      14 - * TypeScript will catch this at compile time because 'PROT' isn't in the interface.                                                                                
+      15 - */                                                                                                                                                                 
+       5  interface Config {                                                                                                                                                  
+       6    PORT: number;                                                                                                                                                     
+       7    NODE_ENV: string;                                                                                                                                                 
+     ...                                                                                                                                                                      
+       9    JWT_EXPIRES_IN: number;                                                                                                                                           
+      10  }                                                                                                                                                                   
+      11                                                                                                                                                                      
+      23 -/**                                                                                                                                                                 
+      24 - * TypeScript Concept: Type Assertion (the 'as' keyword)                                                                                                            
+      25 - * -----------------------------------------------------                                                                                                            
+      26 - * Sometimes you know more about a value's type than TypeScript can infer.                                                                                          
+      27 - * process.env values are always string | undefined, but we're providing defaults,                                                                                  
+      28 - * so we know they'll be strings. We then convert to the appropriate type.                                                                                          
+      29 - */                                                                                                                                                                 
+      12  const config: Config = {                                                                                                                                            
+      13    PORT: parseInt(process.env.PORT || '3000', 10),                                                                                                                   
+      14    NODE_ENV: process.env.NODE_ENV || 'development',                                                                                                                  
+     ...                                                                                                                                                                      
+      16    JWT_EXPIRES_IN: parseInt(process.env.JWT_EXPIRES_IN || '3600', 10),                                                                                               
+      17  };                                                                                                                                                                  
+      18                                                                                                                                                                      
+      37 -/**                                                                                                                                                                 
+      38 - * TypeScript Concept: Export Types                                                                                                                                 
+      39 - * --------------------------------                                                                                                                                 
+      40 - * We can export the interface so other files can use it for type checking.                                                                                         
+      41 - * 'export default' exports the config object as the main export of this module.                                                                                    
+      42 - */                                                                                                                                                                 
+      19  export { Config };                                                                                                                                                  
+      20  export default config;                                                                                                                                              
+                                                                                                                                                                              
+⏺ Write(utils/logger.ts)                                                                                                                                                      
+  ⎿  Added 1 line, removed 69 lines                                                                                                                                           
+       1  import config from './config';                                                                                                                                      
+       2                                                                                                                                                                      
+       3 -/**                                                                                                                                                                 
+       4 - * TypeScript Concept: Enum                                                                                                                                         
+       5 - * ------------------------                                                                                                                                         
+       6 - * Enums define a set of named constants. They're useful when you have                                                                                              
+       7 - * a fixed set of related values. Here, we define log levels.                                                                                                       
+       8 - *                                                                                                                                                                  
+       9 - * By default, enums are numeric (INFO = 0, WARN = 1, etc.), but you can                                                                                            
+      10 - * also create string enums: enum Level { INFO = 'INFO', WARN = 'WARN' }                                                                                            
+      11 - */                                                                                                                                                                 
+       3  enum LogLevel {                                                                                                                                                     
+       4    DEBUG = 0,                                                                                                                                                        
+       5    INFO = 1,                                                                                                                                                         
+     ...                                                                                                                                                                      
+       7    ERROR = 3,                                                                                                                                                        
+       8  }                                                                                                                                                                   
+       9                                                                                                                                                                      
+      19 -/**                                                                                                                                                                 
+      20 - * TypeScript Concept: Type from Enum Keys                                                                                                                          
+      21 - * ---------------------------------------                                                                                                                          
+      22 - * 'keyof typeof LogLevel' gives us a union type of the enum keys:                                                                                                  
+      23 - * 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'                                                                                                                              
+      24 - *                                                                                                                                                                  
+      25 - * This is useful when you want to accept enum keys as strings.                                                                                                     
+      26 - */                                                                                                                                                                 
+      10  type LogLevelName = keyof typeof LogLevel;                                                                                                                          
+      11                                                                                                                                                                      
+      29 -/**                                                                                                                                                                 
+      30 - * Simple Logger Utility                                                                                                                                            
+      31 - * ---------------------                                                                                                                                            
+      32 - * A lightweight logger that:                                                                                                                                       
+      33 - * - Respects log levels (DEBUG < INFO < WARN < ERROR)                                                                                                              
+      34 - * - Includes timestamps                                                                                                                                            
+      35 - * - Silences output in test environment                                                                                                                            
+      36 - * - Uses structured format for easy parsing                                                                                                                        
+      37 - *                                                                                                                                                                  
+      38 - * In production, you'd likely use a library like Winston or Pino,                                                                                                  
+      39 - * but this demonstrates the concepts without extra dependencies.                                                                                                   
+      40 - */                                                                                                                                                                 
+      12  class Logger {                                                                                                                                                      
+      13    private level: LogLevel;                                                                                                                                          
+      14                                                                                                                                                                      
+      15    constructor() {                                                                                                                                                   
+      45 -    // Set log level based on environment                                                                                                                           
+      46 -    // Test environment is silent by default, development shows all                                                                                                 
+      16      if (config.NODE_ENV === 'test') {                                                                                                                               
+      48 -      this.level = LogLevel.ERROR + 1; // Silent - nothing will log                                                                                                 
+      17 +      this.level = LogLevel.ERROR + 1;                                                                                                                              
+      18      } else if (config.NODE_ENV === 'development') {                                                                                                                 
+      19        this.level = LogLevel.DEBUG;                                                                                                                                  
+      20      } else {                                                                                                                                                        
+     ...                                                                                                                                                                      
+      22      }                                                                                                                                                               
+      23    }                                                                                                                                                                 
+      24                                                                                                                                                                      
+      56 -  /**                                                                                                                                                               
+      57 -   * TypeScript Concept: Private Methods                                                                                                                            
+      58 -   * -----------------------------------                                                                                                                            
+      59 -   * The 'private' keyword means this method can only be called from                                                                                                
+      60 -   * within this class, not from outside. It's an implementation detail.                                                                                            
+      61 -   */                                                                                                                                                               
+      25    private formatMessage(level: LogLevelName, message: string, meta?: object): string {                                                                              
+      26      const timestamp = new Date().toISOString();                                                                                                                     
+      27      const metaString = meta ? ` ${JSON.stringify(meta)}` : '';                                                                                                      
+      28      return `[${timestamp}] [${level}] ${message}${metaString}`;                                                                                                     
+      29    }                                                                                                                                                                 
+      30                                                                                                                                                                      
+      68 -  /**                                                                                                                                                               
+      69 -   * TypeScript Concept: Rest Parameters with Spread                                                                                                                
+      70 -   * ------------------------------------------------                                                                                                               
+      71 -   * The '...args' syntax collects all remaining arguments into an array.                                                                                           
+      72 -   * We use 'unknown[]' as the type because we don't know what types                                                                                                
+      73 -   * the caller might pass.                                                                                                                                         
+      74 -   *                                                                                                                                                                
+      75 -   * 'unknown' is safer than 'any' because you must check the type                                                                                                  
+      76 -   * before using the value, preventing accidental misuse.                                                                                                          
+      77 -   */                                                                                                                                                               
+      31    private log(level: LogLevel, levelName: LogLevelName, message: string, meta?: object): void {                                                                     
+      32      if (level >= this.level) {                                                                                                                                      
+      33        const formattedMessage = this.formatMessage(levelName, message, meta);                                                                                        
+      34                                                                                                                                                                      
+      82 -      // Use appropriate console method based on level                                                                                                              
+      35        switch (level) {                                                                                                                                              
+      36          case LogLevel.ERROR:                                                                                                                                        
+      37            // eslint-disable-next-line no-console                                                                                                                    
+     ...                                                                                                                                                                      
+       48      }                                                                                                                                                              
+       49    }                                                                                                                                                                
+       50                                                                                                                                                                     
+       99 -  /**                                                                                                                                                              
+      100 -   * Public logging methods                                                                                                                                        
+      101 -   * ----------------------                                                                                                                                        
+      102 -   * These are the methods external code will call.                                                                                                                
+      103 -   * Each corresponds to a log level.                                                                                                                              
+      104 -   */                                                                                                                                                              
+       51    debug(message: string, meta?: object): void {                                                                                                                    
+       52      this.log(LogLevel.DEBUG, 'DEBUG', message, meta);                                                                                                              
+       53    }                                                                                                                                                                
+     ...                                                                                                                                                                      
+       64      this.log(LogLevel.ERROR, 'ERROR', message, meta);                                                                                                              
+       65    }                                                                                                                                                                
+       66                                                                                                                                                                     
+      121 -  /**                                                                                                                                                              
+      122 -   * Log an HTTP request                                                                                                                                           
+      123 -   * -------------------                                                                                                                                           
+      124 -   * Convenience method for logging incoming requests.                                                                                                             
+      125 -   */                                                                                                                                                              
+       67    request(method: string, path: string, statusCode?: number): void {                                                                                               
+       68      const meta = statusCode !== undefined ? { statusCode } : undefined;                                                                                            
+       69      this.info(`${method} ${path}`, meta);                                                                                                                          
+       70    }                                                                                                                                                                
+       71  }                                                                                                                                                                  
+       72                                                                                                                                                                     
+      132 -/**                                                                                                                                                                
+      133 - * TypeScript Concept: Singleton Export                                                                                                                            
+      134 - * ------------------------------------                                                                                                                            
+      135 - * We export a single instance of the Logger class. This means all                                                                                                 
+      136 - * parts of the application share the same logger instance, ensuring                                                                                               
+      137 - * consistent configuration.                                                                                                                                       
+      138 - *                                                                                                                                                                 
+      139 - * This is the "singleton pattern" - there's only one logger instance.                                                                                             
+      140 - */                                                                                                                                                                
+       73  const logger = new Logger();                                                                                                                                       
+       74  export default logger;                                                                                                                                             
+                                                                                                                                                                              
+❯ Has the use of Pino or Winston as a logger utility been mentioned as a future improvement in the README.md? If not could you add it?                                        
+                                                                                                                                                                              
+⏺ Let me check the README.md for the Future Enhancements section.                                                                                                             
+                                                                                                                                                                              
+⏺ Read(README.md)                                                                                                                                                             
+  ⎿  Read 20 lines                                                                                                                                                            
+                                                                                                                                                                              
+⏺ No, it's not mentioned. Let me add it to the Future Enhancements section.                                                                                                   
+                                                                                                                                                                              
+⏺ Update(README.md)                                                                                                                                                           
+  ⎿  Added 1 line                                                                                                                                                             
+      472  - [ ] **Rate Limiting** - Prevent API abuse                                                                                                                        
+      473  - [ ] **OpenAPI/Swagger** - Interactive API documentation                                                                                                          
+      474  - [ ] **Docker** - Containerization for deployment                                                                                                                 
+      475 +- [ ] **Production Logger** - Winston or Pino for structured logging                                                                                               
+      476                                                                                                                                                                     
+      477  ## Known Limitations                                                                                                                                               
+      478                                                                                                                                                                     
+                                                                                                                                                                              
+⏺ Added. Now let me continue cleaning the remaining code files.                                                                                                               
+                                                                                                                                                                              
+⏺ Write(utils/middleware.ts)                                                                                                                                                  
+  ⎿  Removed 98 lines                                                                                                                                                         
+      12  } from '../errors/ApiError';                                                                                                                                        
+      13  import { getFirstZodError } from '../validators/reservationValidator';                                                                                              
+      14                                                                                                                                                                      
+      15 -/**                                                                                                                                                                 
+      16 - * TypeScript Concept: Express Middleware Types                                                                                                                     
+      17 - * --------------------------------------------                                                                                                                     
+      18 - * Express middleware functions have a specific signature:                                                                                                          
+      19 - * (req: Request, res: Response, next: NextFunction) => void                                                                                                        
+      20 - *                                                                                                                                                                  
+      21 - * The 'next' function passes control to the next middleware.                                                                                                       
+      22 - * If you call next(error), it passes to error-handling middleware.                                                                                                 
+      23 - */                                                                                                                                                                 
+      24 -                                                                                                                                                                    
+      25 -/**                                                                                                                                                                 
+      26 - * Authentication Middleware                                                                                                                                        
+      27 - * -------------------------                                                                                                                                        
+      28 - * Extracts and verifies JWT from the Authorization header.                                                                                                         
+      29 - * If valid, attaches the decoded payload to req.user.                                                                                                              
+      30 - * If invalid, throws an UnauthorizedError.                                                                                                                         
+      31 - *                                                                                                                                                                  
+      32 - * TypeScript Concept: Type Narrowing                                                                                                                               
+      33 - * ----------------------------------                                                                                                                               
+      34 - * After this middleware runs successfully, req.user is definitely set.                                                                                             
+      35 - * However, TypeScript doesn't know this, so downstream code still sees                                                                                             
+      36 - * req.user as 'TokenPayload | undefined'. You might need to check or                                                                                               
+      37 - * use non-null assertion (req.user!) when you're certain it's set.                                                                                                 
+      38 - */                                                                                                                                                                 
+      15  export const authenticate: RequestHandler = (                                                                                                                       
+      16    req: Request,                                                                                                                                                     
+      17    _res: Response,                                                                                                                                                   
+     ...                                                                                                                                                                      
+      24        throw new UnauthorizedError('Authentication required. Please provide a valid token.');                                                                        
+      25      }                                                                                                                                                               
+      26                                                                                                                                                                      
+      51 -    // Expected format: "Bearer <token>"                                                                                                                            
+      27      const parts = authHeader.split(' ');                                                                                                                            
+      28      if (parts.length !== 2 || parts[0] !== 'Bearer') {                                                                                                              
+      29        throw new UnauthorizedError(                                                                                                                                  
+     ...                                                                                                                                                                      
+      32      }                                                                                                                                                               
+      33                                                                                                                                                                      
+      34      const token = parts[1];                                                                                                                                         
+      60 -                                                                                                                                                                    
+      61 -    /**                                                                                                                                                             
+      62 -     * TypeScript Concept: Type Assertion with 'as'                                                                                                                 
+      63 -     * --------------------------------------------                                                                                                                 
+      64 -     * jwt.verify returns 'string | JwtPayload'. We know our payload                                                                                                
+      65 -     * matches TokenPayload, so we tell TypeScript with 'as TokenPayload'.                                                                                          
+      66 -     *                                                                                                                                                              
+      67 -     * This is safe here because we control what goes into the token                                                                                                
+      68 -     * during login. In general, be careful with type assertions -                                                                                                  
+      69 -     * they bypass TypeScript's safety checks.                                                                                                                      
+      70 -     */                                                                                                                                                             
+      35      const decoded = jwt.verify(token, config.JWT_SECRET) as TokenPayload;                                                                                           
+      36                                                                                                                                                                      
+      73 -    // Attach user info to request for downstream handlers                                                                                                          
+      37      req.user = decoded;                                                                                                                                             
+      38                                                                                                                                                                      
+      39      logger.debug('User authenticated', { userId: decoded.userId });                                                                                                 
+      40      next();                                                                                                                                                         
+      41    } catch (error) {                                                                                                                                                 
+      79 -    // Handle specific JWT errors with user-friendly messages                                                                                                       
+      42      if (error instanceof jwt.JsonWebTokenError) {                                                                                                                   
+      43        next(new UnauthorizedError('Invalid token. Please log in again.'));                                                                                           
+      44      } else if (error instanceof jwt.TokenExpiredError) {                                                                                                            
+     ...                                                                                                                                                                      
+       49    }                                                                                                                                                                
+       50  };                                                                                                                                                                 
+       51                                                                                                                                                                     
+       90 -/**                                                                                                                                                                
+       91 - * Request Validation Middleware Factory                                                                                                                           
+       92 - * -------------------------------------                                                                                                                           
+       93 - * Creates middleware that validates request data against a Zod schema.                                                                                            
+       94 - *                                                                                                                                                                 
+       95 - * TypeScript Concept: Higher-Order Functions                                                                                                                      
+       96 - * ------------------------------------------                                                                                                                      
+       97 - * This function RETURNS a middleware function. It's a "factory" that                                                                                              
+       98 - * creates customized middleware based on the schema you provide.                                                                                                  
+       99 - *                                                                                                                                                                 
+      100 - * Usage:                                                                                                                                                          
+      101 - *   router.post('/login', validate(loginSchema, 'body'), loginController);                                                                                        
+      102 - *                                                                                                                                                                 
+      103 - * The 'source' parameter determines what part of the request to validate:                                                                                         
+      104 - * - 'body': request body (POST/PUT data)                                                                                                                          
+      105 - * - 'params': URL parameters (/users/:id)                                                                                                                         
+      106 - * - 'query': query string (?page=1&limit=10)                                                                                                                      
+      107 - */                                                                                                                                                                
+       52  type ValidationSource = 'body' | 'params' | 'query';                                                                                                               
+       53                                                                                                                                                                     
+       54  export function validate(                                                                                                                                          
+       55    schema: ZodSchema,                                                                                                                                               
+       56    source: ValidationSource = 'body'                                                                                                                                
+       57  ): RequestHandler {                                                                                                                                                
+      114 -  /**                                                                                                                                                              
+      115 -   * TypeScript Concept: Closure                                                                                                                                   
+      116 -   * ---------------------------                                                                                                                                   
+      117 -   * The returned function "closes over" the schema and source variables,                                                                                          
+      118 -   * keeping them accessible even after validate() has returned.                                                                                                   
+      119 -   */                                                                                                                                                              
+       58    return (req: Request, _res: Response, next: NextFunction): void => {                                                                                             
+       59      try {                                                                                                                                                          
+      122 -      // Get the data to validate based on source                                                                                                                  
+       60        const data = req[source];                                                                                                                                    
+      124 -                                                                                                                                                                   
+      125 -      // Validate and replace with parsed/transformed data                                                                                                         
+       61        const validated = schema.parse(data);                                                                                                                        
+       62                                                                                                                                                                     
+      128 -      // Replace the original data with validated data                                                                                                             
+      129 -      // This ensures we're working with clean, typed data                                                                                                         
+       63        if (source === 'body') {                                                                                                                                     
+       64          req.body = validated;                                                                                                                                      
+       65        } else if (source === 'params') {                                                                                                                            
+     ...                                                                                                                                                                      
+       71        next();                                                                                                                                                      
+       72      } catch (error) {                                                                                                                                              
+       73        if (error instanceof ZodError) {                                                                                                                             
+      141 -        // Convert Zod error to our ValidationError                                                                                                                
+       74          const message = getFirstZodError(error);                                                                                                                   
+       75          next(new ValidationError(message));                                                                                                                        
+       76        } else {                                                                                                                                                     
+     ...                                                                                                                                                                      
+       80    };                                                                                                                                                               
+       81  }                                                                                                                                                                  
+       82                                                                                                                                                                     
+      151 -/**                                                                                                                                                                
+      152 - * Error Handling Middleware                                                                                                                                       
+      153 - * -------------------------                                                                                                                                       
+      154 - * This is Express's error-handling middleware. It has 4 parameters                                                                                                
+      155 - * (err, req, res, next) which tells Express this handles errors.                                                                                                  
+      156 - *                                                                                                                                                                 
+      157 - * TypeScript Concept: Error Types                                                                                                                                 
+      158 - * -------------------------------                                                                                                                                 
+      159 - * The 'err' parameter is typed as 'unknown' because errors can be                                                                                                 
+      160 - * anything in JavaScript. We use type guards and checks to handle                                                                                                 
+      161 - * different error types safely.                                                                                                                                   
+      162 - */                                                                                                                                                                
+       83  export function errorHandler(                                                                                                                                      
+       84    err: unknown,                                                                                                                                                    
+       85    req: Request,                                                                                                                                                    
+       86    res: Response,                                                                                                                                                   
+       87    _next: NextFunction                                                                                                                                              
+       88  ): void {                                                                                                                                                          
+      169 -  // Log the error for debugging                                                                                                                                   
+       89    logger.error('Error occurred', {                                                                                                                                 
+       90      path: req.path,                                                                                                                                                
+       91      method: req.method,                                                                                                                                            
+       92      error: err instanceof Error ? err.message : 'Unknown error',                                                                                                   
+       93    });                                                                                                                                                              
+       94                                                                                                                                                                     
+      176 -  // Build error response                                                                                                                                          
+       95    let response: ApiErrorResponse;                                                                                                                                  
+       96                                                                                                                                                                     
+       97    if (isApiError(err)) {                                                                                                                                           
+      180 -    // Our custom API errors                                                                                                                                       
+       98      response = {                                                                                                                                                   
+       99        error: err.name,                                                                                                                                             
+      100        message: err.message,                                                                                                                                        
+      101        statusCode: err.statusCode,                                                                                                                                  
+      102      };                                                                                                                                                             
+      103    } else if (err instanceof ZodError) {                                                                                                                            
+      187 -    // Zod validation errors that weren't caught by validate middleware                                                                                            
+      104      response = {                                                                                                                                                   
+      105        error: 'ValidationError',                                                                                                                                    
+      106        message: getFirstZodError(err),                                                                                                                              
+      107        statusCode: 400,                                                                                                                                             
+      108      };                                                                                                                                                             
+      109    } else if (err instanceof SyntaxError && 'body' in err) {                                                                                                        
+      194 -    // JSON parsing errors (malformed request body)                                                                                                                
+      110      response = {                                                                                                                                                   
+      111        error: 'ValidationError',                                                                                                                                    
+      112        message: 'Invalid JSON in request body',                                                                                                                     
+      113        statusCode: 400,                                                                                                                                             
+      114      };                                                                                                                                                             
+      115    } else if (err instanceof Error) {                                                                                                                               
+      201 -    // Generic errors - don't expose internal details in production                                                                                                
+      116      response = {                                                                                                                                                   
+      117        error: 'InternalServerError',                                                                                                                                
+      118        message:                                                                                                                                                     
+     ...                                                                                                                                                                      
+      122        statusCode: 500,                                                                                                                                             
+      123      };                                                                                                                                                             
+      124    } else {                                                                                                                                                         
+      211 -    // Unknown error type                                                                                                                                          
+      125      response = {                                                                                                                                                   
+      126        error: 'InternalServerError',                                                                                                                                
+      127        message: 'An unexpected error occurred',                                                                                                                     
+     ...                                                                                                                                                                      
+      132    res.status(response.statusCode).json(response);                                                                                                                  
+      133  }                                                                                                                                                                  
+      134                                                                                                                                                                     
+      222 -/**                                                                                                                                                                
+      223 - * Request Logging Middleware                                                                                                                                      
+      224 - * --------------------------                                                                                                                                      
+      225 - * Logs incoming requests for debugging and monitoring.                                                                                                            
+      226 - */                                                                                                                                                                
+      135  export const requestLogger: RequestHandler = (                                                                                                                     
+      136    req: Request,                                                                                                                                                    
+      137    res: Response,                                                                                                                                                   
+      138    next: NextFunction                                                                                                                                               
+      139  ): void => {                                                                                                                                                       
+      232 -  // Log when the request completes                                                                                                                                
+      140    res.on('finish', () => {                                                                                                                                         
+      141      logger.request(req.method, req.path, res.statusCode);                                                                                                          
+      142    });                                                                                                                                                              
+      143    next();                                                                                                                                                          
+      144  };                                                                                                                                                                 
+      145                                                                                                                                                                     
+      239 -/**                                                                                                                                                                
+      240 - * 404 Not Found Handler                                                                                                                                           
+      241 - * ---------------------                                                                                                                                           
+      242 - * Catches requests that don't match any route.                                                                                                                    
+      243 - */                                                                                                                                                                
+      146  export const notFoundHandler: RequestHandler = (                                                                                                                   
+      147    req: Request,                                                                                                                                                    
+      148    _res: Response,                                                                                                                                                  
+                                                                                                                                                                              
+⏺ Write(types/index.ts)                                                                                                                                                       
+  ⎿  Added 7 lines, removed 100 lines                                                                                                                                         
+       1 -/**                                                                                                                                                                 
+       2 - * TypeScript Concept: Centralized Type Definitions                                                                                                                 
+       3 - * ------------------------------------------------                                                                                                                 
+       4 - * By keeping all our interfaces in one place, we ensure consistency across                                                                                         
+       5 - * the entire application. Any file that needs these types can import them                                                                                          
+       6 - * from here, and if we need to change a type, we only change it in one place.                                                                                      
+       7 - */                                                                                                                                                                 
+       8 -                                                                                                                                                                    
+       9 -/**                                                                                                                                                                 
+      10 - * Room Entity                                                                                                                                                      
+      11 - * -----------                                                                                                                                                      
+      12 - * Represents a meeting room that can be reserved.                                                                                                                  
+      13 - */                                                                                                                                                                 
+       1  export interface Room {                                                                                                                                             
+       2    roomId: string;                                                                                                                                                   
+       3    name: string;                                                                                                                                                     
+       4  }                                                                                                                                                                   
+       5                                                                                                                                                                      
+      19 -/**                                                                                                                                                                 
+      20 - * Reservation Entity                                                                                                                                               
+      21 - * ------------------                                                                                                                                               
+      22 - * Represents a room reservation with time slot information.                                                                                                        
+      23 - * Supports flexible duration bookings and midnight-spanning reservations.                                                                                          
+      24 - *                                                                                                                                                                  
+      25 - * TypeScript Concept: String Literal Comments                                                                                                                      
+      26 - * -------------------------------------------                                                                                                                      
+      27 - * The comments like "ISO date string" and "HH:MM format" are documentation                                                                                         
+      28 - * hints. In a more advanced setup, you could use branded types or template                                                                                         
+      29 - * literal types to enforce these formats at the type level.                                                                                                        
+      30 - *                                                                                                                                                                  
+      31 - * Midnight-Spanning Bookings:                                                                                                                                      
+      32 - * - When endTime < startTime (e.g., 23:00-02:00), the booking spans midnight                                                                                       
+      33 - * - In this case, endDate = startDate + 1 day                                                                                                                      
+      34 - * - For same-day bookings, startDate === endDate                                                                                                                   
+      35 - */                                                                                                                                                                 
+       6  export interface Reservation {                                                                                                                                      
+       7    reservationId: string;                                                                                                                                            
+       8    roomId: string;                                                                                                                                                   
+       9    userId: string;                                                                                                                                                   
+      40 -  startDate: string; // ISO date string (YYYY-MM-DD) - when the booking starts                                                                                      
+      41 -  endDate: string; // ISO date string (YYYY-MM-DD) - when the booking ends (can be next day for midnight-spanning)                                                  
+      42 -  startTime: string; // 24-hour format (HH:MM)                                                                                                                      
+      43 -  endTime: string; // 24-hour format (HH:MM)                                                                                                                        
+      10 +  startDate: string;                                                                                                                                                
+      11 +  endDate: string;                                                                                                                                                  
+      12 +  startTime: string;                                                                                                                                                
+      13 +  endTime: string;                                                                                                                                                  
+      14  }                                                                                                                                                                   
+      15                                                                                                                                                                      
+      46 -/**                                                                                                                                                                 
+      47 - * User Entity                                                                                                                                                      
+      48 - * -----------                                                                                                                                                      
+      49 - * Represents a user who can make reservations.                                                                                                                     
+      50 - * The passwordHash is stored instead of plain text for security.                                                                                                   
+      51 - */                                                                                                                                                                 
+      16  export interface User {                                                                                                                                             
+      17    userId: string;                                                                                                                                                   
+      18    username: string;                                                                                                                                                 
+     ...                                                                                                                                                                      
+      20    passwordHash: string;                                                                                                                                             
+      21  }                                                                                                                                                                   
+      22                                                                                                                                                                      
+      59 -/**                                                                                                                                                                 
+      60 - * JWT Token Payload                                                                                                                                                
+      61 - * -----------------                                                                                                                                                
+      62 - * The data we encode into the JWT token. This is what gets decoded                                                                                                 
+      63 - * when we verify a token and attach it to the request.                                                                                                             
+      64 - *                                                                                                                                                                  
+      65 - * TypeScript Concept: Minimal Interface                                                                                                                            
+      66 - * -------------------------------------                                                                                                                            
+      67 - * We only include what's necessary in the token payload. We don't include                                                                                          
+      68 - * the passwordHash (security risk) or other data that can be looked up.                                                                                            
+      69 - */                                                                                                                                                                 
+      23  export interface TokenPayload {                                                                                                                                     
+      24    userId: string;                                                                                                                                                   
+      25    username: string;                                                                                                                                                 
+      26  }                                                                                                                                                                   
+      27                                                                                                                                                                      
+      75 -/**                                                                                                                                                                 
+      76 - * API Response Types                                                                                                                                               
+      77 - * ------------------                                                                                                                                               
+      78 - * Consistent response shapes for success and error responses.                                                                                                      
+      79 - *                                                                                                                                                                  
+      80 - * TypeScript Concept: Generic Type Parameter <T>                                                                                                                   
+      81 - * ----------------------------------------------                                                                                                                   
+      82 - * The <T> is a "generic" - it's like a placeholder for a type that will                                                                                            
+      83 - * be specified later. When you use ApiResponse<Reservation>, T becomes                                                                                             
+      84 - * Reservation, so data would be of type Reservation.                                                                                                               
+      85 - *                                                                                                                                                                  
+      86 - * Think of it like a function parameter, but for types:                                                                                                            
+      87 - * - Function: function greet(name) { return `Hello ${name}` }                                                                                                      
+      88 - * - Generic:  interface Response<T> { data: T }                                                                                                                    
+      89 - */                                                                                                                                                                 
+      28  export interface ApiResponse<T = undefined> {                                                                                                                       
+      29    message: string;                                                                                                                                                  
+      30    data?: T;                                                                                                                                                         
+     ...                                                                                                                                                                      
+       36    statusCode: number;                                                                                                                                              
+       37  }                                                                                                                                                                  
+       38                                                                                                                                                                     
+      101 -/**                                                                                                                                                                
+      102 - * Request Body Types                                                                                                                                              
+      103 - * ------------------                                                                                                                                              
+      104 - * These define what shape the request body should have for various endpoints.                                                                                     
+      105 - * Zod will validate these at runtime, but having TypeScript interfaces                                                                                            
+      106 - * gives us compile-time type checking too.                                                                                                                        
+      107 - */                                                                                                                                                                
+       39  export interface LoginRequest {                                                                                                                                    
+       40    username: string;                                                                                                                                                
+       41    password: string;                                                                                                                                                
+     ...                                                                                                                                                                      
+       43                                                                                                                                                                     
+       44  export interface CreateReservationRequest {                                                                                                                        
+       45    roomId: string;                                                                                                                                                  
+      115 -  startDate: string; // ISO date string (YYYY-MM-DD) - when the booking starts                                                                                     
+      116 -  startTime: string; // 24-hour format (HH:MM)                                                                                                                     
+      117 -  endTime: string; // 24-hour format (HH:MM)                                                                                                                       
+      118 -  // Note: endDate is calculated automatically based on whether booking spans midnight                                                                             
+       46 +  startDate: string;                                                                                                                                               
+       47 +  startTime: string;                                                                                                                                               
+       48 +  endTime: string;                                                                                                                                                 
+       49  }                                                                                                                                                                  
+      120 -                                                                                                                                                                   
+      121 -/**                                                                                                                                                                
+      122 - * TypeScript Concept: Utility Types - Partial<T>                                                                                                                  
+      123 - * ----------------------------------------------                                                                                                                  
+      124 - * Partial<T> makes all properties of T optional. So Partial<Reservation>                                                                                          
+      125 - * would be like Reservation but with every field having a ? after it.                                                                                             
+      126 - *                                                                                                                                                                 
+      127 - * This is useful for update operations where you might only update some fields.                                                                                   
+      128 - * We're not using it here since reservations are replaced entirely, but it's                                                                                      
+      129 - * a common pattern you'll see.                                                                                                                                    
+      130 - */                                                                                                                                                                
+      131 -                                                                                                                                                                   
+      132 -/**                                                                                                                                                                
+      133 - * TypeScript Concept: Type Aliases vs Interfaces                                                                                                                  
+      134 - * ----------------------------------------------                                                                                                                  
+      135 - * You can also define types using 'type' instead of 'interface':                                                                                                  
+      136 - *                                                                                                                                                                 
+      137 - * type Room = { roomId: string; name: string; }                                                                                                                   
+      138 - *                                                                                                                                                                 
+      139 - * Both are similar, but interfaces can be extended/merged and are generally                                                                                       
+      140 - * preferred for object shapes. Types are better for unions, intersections,                                                                                        
+      141 - * and more complex type manipulations.                                                                                                                            
+      142 - */                                                                                                                                                                
+                                                                                                                                                                              
+⏺ Write(types/express.d.ts)                                                                                                                                                   
+  ⎿  Removed 47 lines                                                                                                                                                         
+       1 -/**                                                                                                                                                                 
+       2 - * TypeScript Concept: Declaration Merging & Module Augmentation                                                                                                    
+       3 - * -------------------------------------------------------------                                                                                                    
+       4 - * This is one of TypeScript's more advanced features. When you install                                                                                             
+       5 - * @types/express, it defines what the Request object looks like. But we                                                                                            
+       6 - * want to add our own 'user' property after JWT authentication.                                                                                                    
+       7 - *                                                                                                                                                                  
+       8 - * Declaration merging lets us "extend" existing type definitions without                                                                                           
+       9 - * modifying the original package. It's like saying "Express's Request                                                                                              
+      10 - * type also has these additional properties in our project."                                                                                                       
+      11 - *                                                                                                                                                                  
+      12 - * The .d.ts Extension                                                                                                                                              
+      13 - * -------------------                                                                                                                                              
+      14 - * Files ending in .d.ts are "declaration files" - they contain only type                                                                                           
+      15 - * information, no runtime code. TypeScript uses them to understand the                                                                                             
+      16 - * shape of JavaScript libraries and to augment existing types.                                                                                                     
+      17 - */                                                                                                                                                                 
+      18 -                                                                                                                                                                    
+       1  import { TokenPayload } from './index';                                                                                                                             
+       2                                                                                                                                                                      
+      21 -/**                                                                                                                                                                 
+      22 - * TypeScript Concept: Global Declaration                                                                                                                           
+      23 - * --------------------------------------                                                                                                                           
+      24 - * 'declare global' tells TypeScript we're adding to the global scope.                                                                                              
+      25 - * Inside, we're opening up the Express namespace and adding to the                                                                                                 
+      26 - * Request interface.                                                                                                                                               
+      27 - *                                                                                                                                                                  
+      28 - * Without this, TypeScript would complain when we try to access req.user                                                                                           
+      29 - * because the default Express Request type doesn't have a 'user' property.                                                                                         
+      30 - */                                                                                                                                                                 
+       3  declare global {                                                                                                                                                    
+       4    namespace Express {                                                                                                                                               
+       5      interface Request {                                                                                                                                             
+      34 -      /**                                                                                                                                                           
+      35 -       * The authenticated user's token payload.                                                                                                                    
+      36 -       * This is set by our auth middleware after JWT verification.                                                                                                 
+      37 -       *                                                                                                                                                            
+      38 -       * The '?' makes this optional because not all requests will be                                                                                               
+      39 -       * authenticated (e.g., the login endpoint).                                                                                                                  
+      40 -       */                                                                                                                                                           
+       6        user?: TokenPayload;                                                                                                                                          
+       7      }                                                                                                                                                               
+       8    }                                                                                                                                                                 
+       9  }                                                                                                                                                                   
+      10                                                                                                                                                                      
+      46 -/**                                                                                                                                                                 
+      47 - * TypeScript Concept: Empty Export                                                                                                                                 
+      48 - * --------------------------------                                                                                                                                 
+      49 - * This empty export statement is necessary to make this file a "module"                                                                                            
+      50 - * rather than a "script". In TypeScript:                                                                                                                           
+      51 - *                                                                                                                                                                  
+      52 - * - A "script" file's declarations go into the global scope automatically                                                                                          
+      53 - * - A "module" file (has import/export) keeps declarations scoped                                                                                                  
+      54 - *                                                                                                                                                                  
+      55 - * We need it to be a module because we're using 'import' at the top,                                                                                               
+      56 - * but we also need 'declare global' to work properly.                                                                                                              
+      57 - */                                                                                                                                                                 
+      11  export {};                                                                                                                                                          
+                                                                                                                                                                              
+⏺ Write(errors/ApiError.ts)                                                                                                                                                   
+  ⎿  Removed 103 lines                                                                                                                                                        
+        1 -/**                                                                                                                                                                
+        2 - * TypeScript Concept: Classes and Inheritance                                                                                                                     
+        3 - * -------------------------------------------                                                                                                                     
+        4 - * TypeScript classes work like ES6 classes but with type annotations.                                                                                             
+        5 - * The 'extends' keyword creates inheritance - child classes get all                                                                                               
+        6 - * properties and methods from the parent class.                                                                                                                   
+        7 - *                                                                                                                                                                 
+        8 - * Why Custom Error Classes?                                                                                                                                       
+        9 - * -------------------------                                                                                                                                       
+       10 - * By creating specific error types, our error handling middleware can                                                                                             
+       11 - * check which type of error occurred and respond appropriately. This is                                                                                           
+       12 - * much cleaner than checking error messages or using magic numbers.                                                                                               
+       13 - */                                                                                                                                                                
+       14 -                                                                                                                                                                   
+       15 -/**                                                                                                                                                                
+       16 - * Base API Error Class                                                                                                                                            
+       17 - * --------------------                                                                                                                                            
+       18 - * All our custom errors extend this class. It adds a statusCode property                                                                                          
+       19 - * to the standard Error class.                                                                                                                                    
+       20 - *                                                                                                                                                                 
+       21 - * TypeScript Concept: Access Modifiers                                                                                                                            
+       22 - * ------------------------------------                                                                                                                            
+       23 - * - public: accessible from anywhere (default)                                                                                                                    
+       24 - * - private: only accessible within the class                                                                                                                     
+       25 - * - protected: accessible within the class and subclasses                                                                                                         
+       26 - * - readonly: can only be set in constructor, then immutable                                                                                                      
+       27 - */                                                                                                                                                                
+        1  export class ApiError extends Error {                                                                                                                              
+        2    public readonly statusCode: number;                                                                                                                              
+        3                                                                                                                                                                     
+       31 -  /**                                                                                                                                                              
+       32 -   * TypeScript Concept: Constructor Parameter Properties                                                                                                          
+       33 -   * ----------------------------------------------------                                                                                                          
+       34 -   * When you add an access modifier (public, private, protected) to a                                                                                             
+       35 -   * constructor parameter, TypeScript automatically:                                                                                                              
+       36 -   * 1. Creates a property with that name                                                                                                                          
+       37 -   * 2. Assigns the parameter value to it                                                                                                                          
+       38 -   *                                                                                                                                                               
+       39 -   * So 'public readonly statusCode: number' in the constructor is shorthand for:                                                                                  
+       40 -   *   statusCode: number;                                                                                                                                         
+       41 -   *   constructor(statusCode: number) { this.statusCode = statusCode; }                                                                                           
+       42 -   *                                                                                                                                                               
+       43 -   * We're using the explicit property approach here for clarity.                                                                                                  
+       44 -   */                                                                                                                                                              
+        4    constructor(message: string, statusCode: number) {                                                                                                               
+       46 -    // Call the parent Error constructor                                                                                                                           
+        5      super(message);                                                                                                                                                
+       48 -                                                                                                                                                                   
+        6      this.statusCode = statusCode;                                                                                                                                  
+       50 -                                                                                                                                                                   
+       51 -    /**                                                                                                                                                            
+       52 -     * JavaScript Quirk: Error Subclassing                                                                                                                         
+       53 -     * -----------------------------------                                                                                                                         
+       54 -     * When extending built-in classes like Error, we need to set the prototype                                                                                    
+       55 -     * explicitly for instanceof checks to work correctly in older JS environments.                                                                                
+       56 -     */                                                                                                                                                            
+        7      Object.setPrototypeOf(this, new.target.prototype);                                                                                                             
+       58 -                                                                                                                                                                   
+       59 -    // Capture a clean stack trace (V8 engines only, like Node.js)                                                                                                 
+        8      if (Error.captureStackTrace) {                                                                                                                                 
+        9        Error.captureStackTrace(this, this.constructor);                                                                                                             
+       10      }                                                                                                                                                              
+       63 -                                                                                                                                                                   
+       64 -    // Set the error name to the class name for better debugging                                                                                                   
+       11      this.name = this.constructor.name;                                                                                                                             
+       12    }                                                                                                                                                                
+       13  }                                                                                                                                                                  
+       14                                                                                                                                                                     
+       69 -/**                                                                                                                                                                
+       70 - * 400 Bad Request - Validation Error                                                                                                                              
+       71 - * -----------------------------------                                                                                                                             
+       72 - * Used when input validation fails (missing fields, wrong format, etc.)                                                                                           
+       73 - */                                                                                                                                                                
+       15  export class ValidationError extends ApiError {                                                                                                                    
+       16    constructor(message: string) {                                                                                                                                   
+       17      super(message, 400);                                                                                                                                           
+       18    }                                                                                                                                                                
+       19  }                                                                                                                                                                  
+       20                                                                                                                                                                     
+       80 -/**                                                                                                                                                                
+       81 - * 401 Unauthorized                                                                                                                                                
+       82 - * ----------------                                                                                                                                                
+       83 - * Used when authentication is required but missing or invalid.                                                                                                    
+       84 - * Example: No token provided, token expired, invalid token.                                                                                                       
+       85 - */                                                                                                                                                                
+       21  export class UnauthorizedError extends ApiError {                                                                                                                  
+       22    constructor(message: string = 'Authentication required') {                                                                                                       
+       23      super(message, 401);                                                                                                                                           
+       24    }                                                                                                                                                                
+       25  }                                                                                                                                                                  
+       26                                                                                                                                                                     
+       92 -/**                                                                                                                                                                
+       93 - * 403 Forbidden                                                                                                                                                   
+       94 - * -------------                                                                                                                                                   
+       95 - * Used when user is authenticated but doesn't have permission.                                                                                                    
+       96 - * Example: Trying to delete another user's reservation.                                                                                                           
+       97 - *                                                                                                                                                                 
+       98 - * Note: We use UnauthorizedError for both 401 and 403 cases in this API.                                                                                          
+       99 - * For 403 specifically, we pass a custom message and can check statusCode                                                                                         
+      100 - * if we need to differentiate. Some APIs create a separate ForbiddenError.                                                                                        
+      101 - */                                                                                                                                                                
+       27  export class ForbiddenError extends ApiError {                                                                                                                     
+       28    constructor(message: string = 'You do not have permission to perform this action') {                                                                             
+       29      super(message, 403);                                                                                                                                           
+       30    }                                                                                                                                                                
+       31  }                                                                                                                                                                  
+       32                                                                                                                                                                     
+      108 -/**                                                                                                                                                                
+      109 - * 404 Not Found                                                                                                                                                   
+      110 - * -------------                                                                                                                                                   
+      111 - * Used when a requested resource doesn't exist.                                                                                                                   
+      112 - * Example: Room not found, reservation not found.                                                                                                                 
+      113 - */                                                                                                                                                                
+       33  export class NotFoundError extends ApiError {                                                                                                                      
+       34    constructor(message: string) {                                                                                                                                   
+       35      super(message, 404);                                                                                                                                           
+       36    }                                                                                                                                                                
+       37  }                                                                                                                                                                  
+       38                                                                                                                                                                     
+      120 -/**                                                                                                                                                                
+      121 - * 409 Conflict                                                                                                                                                    
+      122 - * ------------                                                                                                                                                    
+      123 - * Used when the request conflicts with current state.                                                                                                             
+      124 - * Example: Trying to book a time slot that's already taken.                                                                                                       
+      125 - *                                                                                                                                                                 
+      126 - * TypeScript Concept: Optional Properties with Default Values                                                                                                     
+      127 - * -----------------------------------------------------------                                                                                                     
+      128 - * The details parameter has a default value of undefined, making it optional.                                                                                     
+      129 - * The '?' in the property definition (details?: ConflictDetails) means                                                                                            
+      130 - * the property might not exist on the object.                                                                                                                     
+      131 - */                                                                                                                                                                
+       39  export interface ConflictDetails {                                                                                                                                 
+       40    existingReservation?: {                                                                                                                                          
+       41      reservationId: string;                                                                                                                                         
+     ...                                                                                                                                                                      
+       57    }                                                                                                                                                                
+       58  }                                                                                                                                                                  
+       59                                                                                                                                                                     
+      153 -/**                                                                                                                                                                
+      154 - * TypeScript Concept: Type Guards                                                                                                                                 
+      155 - * -------------------------------                                                                                                                                 
+      156 - * Sometimes TypeScript doesn't know what type something is. Type guards                                                                                           
+      157 - * are functions that help TypeScript narrow down the type.                                                                                                        
+      158 - *                                                                                                                                                                 
+      159 - * The 'error is ApiError' return type is a "type predicate" - it tells                                                                                            
+      160 - * TypeScript that if this function returns true, the error is definitely                                                                                          
+      161 - * an ApiError within that code block.                                                                                                                             
+      162 - */                                                                                                                                                                
+       60  export function isApiError(error: unknown): error is ApiError {                                                                                                    
+       61    return error instanceof ApiError;                                                                                                                                
+       62  }                                                                                                                                                                  
+                                                                                                                                                                              
+⏺ Write(models/room.ts)                                                                                                                                                       
+  ⎿  Added 1 line, removed 43 lines                                                                                                                                           
+       1  import { Room } from '../types';                                                                                                                                    
+       2                                                                                                                                                                      
+       3 -/**                                                                                                                                                                 
+       4 - * In-Memory Room Storage                                                                                                                                           
+       5 - * ----------------------                                                                                                                                           
+       6 - * In a real application, this would be a database. For this demo,                                                                                                  
+       7 - * we use a simple array that resets when the server restarts.                                                                                                      
+       8 - *                                                                                                                                                                  
+       9 - * TypeScript Concept: Type Annotation on Variables                                                                                                                 
+      10 - * ------------------------------------------------                                                                                                                 
+      11 - * 'Room[]' means "an array of Room objects". TypeScript will ensure                                                                                                
+      12 - * every item in this array matches the Room interface.                                                                                                             
+      13 - */                                                                                                                                                                 
+       3  const rooms: Room[] = [                                                                                                                                             
+       4    { roomId: 'room-1', name: 'Conference Room A' },                                                                                                                  
+       5    { roomId: 'room-2', name: 'Meeting Room B' },                                                                                                                     
+       6    { roomId: 'room-3', name: 'Huddle Space C' },                                                                                                                     
+       7  ];                                                                                                                                                                  
+       8                                                                                                                                                                      
+      20 -/**                                                                                                                                                                 
+      21 - * Room Model Functions                                                                                                                                             
+      22 - * --------------------                                                                                                                                             
+      23 - * These functions provide a clean API for accessing room data.                                                                                                     
+      24 - * If we later switch to a database, we only need to change these                                                                                                   
+      25 - * functions - the rest of the app stays the same.                                                                                                                  
+      26 - */                                                                                                                                                                 
+      27 -                                                                                                                                                                    
+      28 -/**                                                                                                                                                                 
+      29 - * Get all rooms                                                                                                                                                    
+      30 - *                                                                                                                                                                  
+      31 - * TypeScript Concept: Return Type Annotations                                                                                                                      
+      32 - * -------------------------------------------                                                                                                                      
+      33 - * ': Room[]' after the function parameters declares the return type.                                                                                               
+      34 - * TypeScript will verify the function actually returns this type.                                                                                                  
+      35 - */                                                                                                                                                                 
+       9  export function getAllRooms(): Room[] {                                                                                                                             
+      37 -  return [...rooms]; // Return a copy to prevent external mutations                                                                                                 
+      10 +  return [...rooms];                                                                                                                                                
+      11  }                                                                                                                                                                   
+      12                                                                                                                                                                      
+      40 -/**                                                                                                                                                                 
+      41 - * Find a room by ID                                                                                                                                                
+      42 - *                                                                                                                                                                  
+      43 - * TypeScript Concept: Union Types with undefined                                                                                                                   
+      44 - * ----------------------------------------------                                                                                                                   
+      45 - * 'Room | undefined' means this function returns either a Room object                                                                                              
+      46 - * OR undefined (if not found). This forces callers to handle the                                                                                                   
+      47 - * "not found" case, preventing null pointer errors.                                                                                                                
+      48 - */                                                                                                                                                                 
+      13  export function findRoomById(roomId: string): Room | undefined {                                                                                                    
+      14    return rooms.find((room) => room.roomId === roomId);                                                                                                              
+      15  }                                                                                                                                                                   
+      16                                                                                                                                                                      
+      53 -/**                                                                                                                                                                 
+      54 - * Check if a room exists                                                                                                                                           
+      55 - */                                                                                                                                                                 
+      17  export function roomExists(roomId: string): boolean {                                                                                                               
+      18    return rooms.some((room) => room.roomId === roomId);                                                                                                              
+      19  }                                                                                                                                                                   
+      20                                                                                                                                                                      
+      60 -/**                                                                                                                                                                 
+      61 - * Reset rooms to initial state (useful for testing)                                                                                                                
+      62 - */                                                                                                                                                                 
+      21  export function resetRooms(): void {                                                                                                                                
+      22    rooms.length = 0;                                                                                                                                                 
+      23    rooms.push(                                                                                                                                                       
+                                                                                                                                                                              
+⏺ Write(models/user.ts)                                                                                                                                                       
+  ⎿  Removed 58 lines                                                                                                                                                         
+       1  import bcrypt from 'bcrypt';                                                                                                                                        
+       2  import { User } from '../types';                                                                                                                                    
+       3                                                                                                                                                                      
+       4 -/**                                                                                                                                                                 
+       5 - * In-Memory User Storage                                                                                                                                           
+       6 - * ----------------------                                                                                                                                           
+       7 - * Password hashes are generated using bcrypt with a cost factor of 10.                                                                                             
+       8 - *                                                                                                                                                                  
+       9 - * IMPORTANT: In a real app, you'd NEVER commit password hashes to code.                                                                                            
+      10 - * These are here for demo/testing purposes only.                                                                                                                   
+      11 - *                                                                                                                                                                  
+      12 - * Test Credentials:                                                                                                                                                
+      13 - * - alice / SecurePass123!                                                                                                                                         
+      14 - * - bob / BobSecure2026!                                                                                                                                           
+      15 - */                                                                                                                                                                 
+      16 -                                                                                                                                                                    
+      17 -/**                                                                                                                                                                 
+      18 - * TypeScript Concept: Synchronous vs Async Initialization                                                                                                          
+      19 - * -------------------------------------------------------                                                                                                          
+      20 - * bcrypt.hashSync() is the synchronous version of hash(). We use it here                                                                                           
+      21 - * because we need the hashes immediately when the module loads.                                                                                                    
+      22 - *                                                                                                                                                                  
+      23 - * In production code, you'd typically use the async version in an                                                                                                  
+      24 - * initialization function to avoid blocking the event loop.                                                                                                        
+      25 - */                                                                                                                                                                 
+       4  const SALT_ROUNDS = 10;                                                                                                                                             
+       5                                                                                                                                                                      
+       6  const users: User[] = [                                                                                                                                             
+     ...                                                                                                                                                                      
+      18    },                                                                                                                                                                
+      19  ];                                                                                                                                                                  
+      20                                                                                                                                                                      
+      43 -/**                                                                                                                                                                 
+      44 - * User Model Functions                                                                                                                                             
+      45 - * --------------------                                                                                                                                             
+      46 - */                                                                                                                                                                 
+      47 -                                                                                                                                                                    
+      48 -/**                                                                                                                                                                 
+      49 - * Find a user by username                                                                                                                                          
+      50 - */                                                                                                                                                                 
+      21  export function findUserByUsername(username: string): User | undefined {                                                                                            
+      22    return users.find((user) => user.username === username);                                                                                                          
+      23  }                                                                                                                                                                   
+      24                                                                                                                                                                      
+      55 -/**                                                                                                                                                                 
+      56 - * Find a user by ID                                                                                                                                                
+      57 - */                                                                                                                                                                 
+      25  export function findUserById(userId: string): User | undefined {                                                                                                    
+      26    return users.find((user) => user.userId === userId);                                                                                                              
+      27  }                                                                                                                                                                   
+      28                                                                                                                                                                      
+      62 -/**                                                                                                                                                                 
+      63 - * Verify a password against a hash                                                                                                                                 
+      64 - *                                                                                                                                                                  
+      65 - * TypeScript Concept: Promise Return Types                                                                                                                         
+      66 - * ----------------------------------------                                                                                                                         
+      67 - * 'Promise<boolean>' means this function returns a Promise that will                                                                                               
+      68 - * resolve to a boolean. This is the async equivalent of 'boolean'.                                                                                                 
+      69 - *                                                                                                                                                                  
+      70 - * You'd call it with: const isValid = await verifyPassword(...)                                                                                                    
+      71 - */                                                                                                                                                                 
+      29  export async function verifyPassword(                                                                                                                               
+      30    password: string,                                                                                                                                                 
+      31    hash: string                                                                                                                                                      
+     ...                                                                                                                                                                      
+       33    return bcrypt.compare(password, hash);                                                                                                                           
+       34  }                                                                                                                                                                  
+       35                                                                                                                                                                     
+       79 -/**                                                                                                                                                                
+       80 - * Check if a user exists                                                                                                                                          
+       81 - */                                                                                                                                                                
+       36  export function userExists(userId: string): boolean {                                                                                                              
+       37    return users.some((user) => user.userId === userId);                                                                                                             
+       38  }                                                                                                                                                                  
+       39                                                                                                                                                                     
+       86 -/**                                                                                                                                                                
+       87 - * Get all users (without password hashes)                                                                                                                         
+       88 - *                                                                                                                                                                 
+       89 - * TypeScript Concept: Omit Utility Type                                                                                                                           
+       90 - * -------------------------------------                                                                                                                           
+       91 - * Omit<User, 'passwordHash'> creates a new type that has all properties                                                                                           
+       92 - * of User EXCEPT 'passwordHash'. This is useful for creating "safe"                                                                                               
+       93 - * versions of types that exclude sensitive data.                                                                                                                  
+       94 - */                                                                                                                                                                
+       40  export function getAllUsers(): Omit<User, 'passwordHash'>[] {                                                                                                      
+       41    return users.map(({ passwordHash: _, ...user }) => user);                                                                                                        
+       42  }                                                                                                                                                                  
+       43                                                                                                                                                                     
+       99 -/**                                                                                                                                                                
+      100 - * Reset users to initial state (useful for testing)                                                                                                               
+      101 - */                                                                                                                                                                
+       44  export function resetUsers(): void {                                                                                                                               
+       45    users.length = 0;                                                                                                                                                
+       46    users.push(                                                                                                                                                      
+                                                                                                                                                                              
+⏺ Write(models/reservation.ts)                                                                                                                                                
+  ⎿  Added 15 lines, removed 87 lines                                                                                                                                         
+        1  import { v4 as uuidv4 } from 'uuid';                                                                                                                               
+        2  import { Reservation } from '../types';                                                                                                                            
+        3                                                                                                                                                                     
+        4 -/**                                                                                                                                                                
+        5 - * In-Memory Reservation Storage                                                                                                                                   
+        6 - * -----------------------------                                                                                                                                   
+        7 - * Seed data: 5 reservations in the first week of June 2026.                                                                                                       
+        8 - * Includes examples of various booking durations.                                                                                                                 
+        9 - *                                                                                                                                                                 
+       10 - * Note: startDate and endDate are the same for same-day bookings.                                                                                                 
+       11 - * For midnight-spanning bookings, endDate would be startDate + 1 day.                                                                                             
+       12 - */                                                                                                                                                                
+        4  const reservations: Reservation[] = [                                                                                                                              
+        5    {                                                                                                                                                                
+        6      reservationId: 'res-1',                                                                                                                                        
+        7      roomId: 'room-1',                                                                                                                                              
+       17 -    userId: 'user-1', // Alice                                                                                                                                     
+       18 -    startDate: '2026-06-02', // Tuesday                                                                                                                            
+        8 +    userId: 'user-1',                                                                                                                                              
+        9 +    startDate: '2026-06-02',                                                                                                                                       
+       10      endDate: '2026-06-02',                                                                                                                                         
+       11      startTime: '09:00',                                                                                                                                            
+       21 -    endTime: '10:30', // 1.5 hour meeting                                                                                                                          
+       12 +    endTime: '10:30',                                                                                                                                              
+       13    },                                                                                                                                                               
+       14    {                                                                                                                                                                
+       15      reservationId: 'res-2',                                                                                                                                        
+       16      roomId: 'room-1',                                                                                                                                              
+       26 -    userId: 'user-2', // Bob                                                                                                                                       
+       27 -    startDate: '2026-06-02', // Tuesday                                                                                                                            
+       17 +    userId: 'user-2',                                                                                                                                              
+       18 +    startDate: '2026-06-02',                                                                                                                                       
+       19      endDate: '2026-06-02',                                                                                                                                         
+       20      startTime: '14:00',                                                                                                                                            
+       30 -    endTime: '16:00', // 2 hour meeting                                                                                                                            
+       21 +    endTime: '16:00',                                                                                                                                              
+       22    },                                                                                                                                                               
+       23    {                                                                                                                                                                
+       24      reservationId: 'res-3',                                                                                                                                        
+       25      roomId: 'room-2',                                                                                                                                              
+       35 -    userId: 'user-1', // Alice                                                                                                                                     
+       36 -    startDate: '2026-06-03', // Wednesday                                                                                                                          
+       26 +    userId: 'user-1',                                                                                                                                              
+       27 +    startDate: '2026-06-03',                                                                                                                                       
+       28      endDate: '2026-06-03',                                                                                                                                         
+       29      startTime: '10:00',                                                                                                                                            
+       39 -    endTime: '11:00', // 1 hour meeting                                                                                                                            
+       30 +    endTime: '11:00',                                                                                                                                              
+       31    },                                                                                                                                                               
+       32    {                                                                                                                                                                
+       33      reservationId: 'res-4',                                                                                                                                        
+       34      roomId: 'room-2',                                                                                                                                              
+       44 -    userId: 'user-2', // Bob                                                                                                                                       
+       45 -    startDate: '2026-06-04', // Thursday                                                                                                                           
+       35 +    userId: 'user-2',                                                                                                                                              
+       36 +    startDate: '2026-06-04',                                                                                                                                       
+       37      endDate: '2026-06-04',                                                                                                                                         
+       38      startTime: '13:00',                                                                                                                                            
+       48 -    endTime: '14:30', // 1.5 hour meeting                                                                                                                          
+       39 +    endTime: '14:30',                                                                                                                                              
+       40    },                                                                                                                                                               
+       41    {                                                                                                                                                                
+       42      reservationId: 'res-5',                                                                                                                                        
+       43      roomId: 'room-3',                                                                                                                                              
+       53 -    userId: 'user-1', // Alice                                                                                                                                     
+       54 -    startDate: '2026-06-05', // Friday                                                                                                                             
+       44 +    userId: 'user-1',                                                                                                                                              
+       45 +    startDate: '2026-06-05',                                                                                                                                       
+       46      endDate: '2026-06-05',                                                                                                                                         
+       47      startTime: '15:00',                                                                                                                                            
+       57 -    endTime: '17:00', // 2 hour meeting                                                                                                                            
+       48 +    endTime: '17:00',                                                                                                                                              
+       49    },                                                                                                                                                               
+       50  ];                                                                                                                                                                 
+       51                                                                                                                                                                     
+       61 -/**                                                                                                                                                                
+       62 - * Reservation Model Functions                                                                                                                                     
+       63 - * ---------------------------                                                                                                                                     
+       64 - * CRUD operations for reservations. No business logic here -                                                                                                      
+       65 - * that belongs in the service layer.                                                                                                                              
+       66 - */                                                                                                                                                                
+       67 -                                                                                                                                                                   
+       68 -/**                                                                                                                                                                
+       69 - * Get all reservations                                                                                                                                            
+       70 - */                                                                                                                                                                
+       52  export function getAllReservations(): Reservation[] {                                                                                                              
+       53    return [...reservations];                                                                                                                                        
+       54  }                                                                                                                                                                  
+       55                                                                                                                                                                     
+       75 -/**                                                                                                                                                                
+       76 - * Find a reservation by ID                                                                                                                                        
+       77 - */                                                                                                                                                                
+       56  export function findReservationById(                                                                                                                               
+       57    reservationId: string                                                                                                                                            
+       58  ): Reservation | undefined {                                                                                                                                       
+       59    return reservations.find((res) => res.reservationId === reservationId);                                                                                          
+       60  }                                                                                                                                                                  
+       61                                                                                                                                                                     
+       84 -/**                                                                                                                                                                
+       85 - * Get all reservations for a specific room                                                                                                                        
+       86 - */                                                                                                                                                                
+       62  export function getReservationsByRoomId(roomId: string): Reservation[] {                                                                                           
+       63    return reservations.filter((res) => res.roomId === roomId);                                                                                                      
+       64  }                                                                                                                                                                  
+       65                                                                                                                                                                     
+       91 -/**                                                                                                                                                                
+       92 - * Get all reservations for a specific user                                                                                                                        
+       93 - */                                                                                                                                                                
+       66  export function getReservationsByUserId(userId: string): Reservation[] {                                                                                           
+       67    return reservations.filter((res) => res.userId === userId);                                                                                                      
+       68  }                                                                                                                                                                  
+       69                                                                                                                                                                     
+       98 -/**                                                                                                                                                                
+       99 - * Find reservations for a room that overlap with a specific date                                                                                                  
+      100 - * --------------------------------------------------------------                                                                                                  
+      101 - * A reservation overlaps with a date if the date falls between                                                                                                    
+      102 - * the reservation's startDate and endDate (inclusive).                                                                                                            
+      103 - *                                                                                                                                                                 
+      104 - * Used for conflict detection in the service layer.                                                                                                               
+      105 - */                                                                                                                                                                
+       70  export function findReservationsByRoomAndDate(                                                                                                                     
+       71    roomId: string,                                                                                                                                                  
+       72    date: string                                                                                                                                                     
+     ...                                                                                                                                                                      
+       76    );                                                                                                                                                               
+       77  }                                                                                                                                                                  
+       78                                                                                                                                                                     
+      115 -/**                                                                                                                                                                
+      116 - * Find reservations for a room within a date range                                                                                                                
+      117 - * -------------------------------------------------                                                                                                               
+      118 - * Returns all reservations that overlap with any date in the given range.                                                                                         
+      119 - * Used for checking conflicts with midnight-spanning bookings.                                                                                                    
+      120 - */                                                                                                                                                                
+       79  export function findReservationsByRoomAndDateRange(                                                                                                                
+       80    roomId: string,                                                                                                                                                  
+       81    startDate: string,                                                                                                                                               
+     ...                                                                                                                                                                      
+       84    return reservations.filter(                                                                                                                                      
+       85      (res) =>                                                                                                                                                       
+       86        res.roomId === roomId &&                                                                                                                                     
+      129 -      // Reservation overlaps with date range if:                                                                                                                  
+      130 -      // reservation starts before range ends AND reservation ends after range starts                                                                              
+       87        res.startDate <= endDate &&                                                                                                                                  
+       88        res.endDate >= startDate                                                                                                                                     
+       89    );                                                                                                                                                               
+       90  }                                                                                                                                                                  
+       91                                                                                                                                                                     
+      136 -/**                                                                                                                                                                
+      137 - * Create a new reservation                                                                                                                                        
+      138 - *                                                                                                                                                                 
+      139 - * TypeScript Concept: Omit for Create Operations                                                                                                                  
+      140 - * ----------------------------------------------                                                                                                                  
+      141 - * When creating a new reservation, the caller provides everything                                                                                                 
+      142 - * except the ID (which we generate). Omit<Reservation, 'reservationId'>                                                                                           
+      143 - * creates a type without the reservationId property.                                                                                                              
+      144 - */                                                                                                                                                                
+       92  export function createReservation(                                                                                                                                 
+       93    data: Omit<Reservation, 'reservationId'>                                                                                                                         
+       94  ): Reservation {                                                                                                                                                   
+     ...                                                                                                                                                                      
+      100    return newReservation;                                                                                                                                           
+      101  }                                                                                                                                                                  
+      102                                                                                                                                                                     
+      156 -/**                                                                                                                                                                
+      157 - * Update an existing reservation                                                                                                                                  
+      158 - *                                                                                                                                                                 
+      159 - * TypeScript Concept: Partial for Updates                                                                                                                         
+      160 - * ---------------------------------------                                                                                                                         
+      161 - * Partial<Reservation> makes all properties optional. This allows                                                                                                 
+      162 - * updating only specific fields without providing the entire object.                                                                                              
+      163 - *                                                                                                                                                                 
+      164 - * Returns the updated reservation or undefined if not found.                                                                                                      
+      165 - */                                                                                                                                                                
+      103  export function updateReservation(                                                                                                                                 
+      104    reservationId: string,                                                                                                                                           
+      105    data: Partial<Omit<Reservation, 'reservationId'>>                                                                                                                
+     ...                                                                                                                                                                      
+      111      return undefined;                                                                                                                                              
+      112    }                                                                                                                                                                
+      113                                                                                                                                                                     
+      177 -  // Merge existing reservation with updates                                                                                                                       
+      114    reservations[index] = {                                                                                                                                          
+      115      ...reservations[index],                                                                                                                                        
+      116      ...data,                                                                                                                                                       
+     ...                                                                                                                                                                      
+      119    return reservations[index];                                                                                                                                      
+      120  }                                                                                                                                                                  
+      121                                                                                                                                                                     
+      186 -/**                                                                                                                                                                
+      187 - * Delete a reservation                                                                                                                                            
+      188 - *                                                                                                                                                                 
+      189 - * Returns true if deleted, false if not found.                                                                                                                    
+      190 - */                                                                                                                                                                
+      122  export function deleteReservation(reservationId: string): boolean {                                                                                                
+      123    const index = reservations.findIndex(                                                                                                                            
+      124      (res) => res.reservationId === reservationId                                                                                                                   
+     ...                                                                                                                                                                      
+      130    return true;                                                                                                                                                     
+      131  }                                                                                                                                                                  
+      132                                                                                                                                                                     
+      202 -/**                                                                                                                                                                
+      203 - * Reset reservations to initial state (useful for testing)                                                                                                        
+      204 - */                                                                                                                                                                
+      133  export function resetReservations(): void {                                                                                                                        
+      134    reservations.length = 0;                                                                                                                                         
+      135    reservations.push(                                                                                                                                               
+                                                                                                                                                                              
+❯ Has the async initialisation written in the commets been marked to the README.md as a thing to be changed in the production? If not be sure to mark it there.               
+                                                                                                                                                                              
+❯ Did you check the README.md for the thing I said last time?                                                                                                                 
+                                                                                                                                                                              
+⏺ Let me check the README.md to verify both items.                                                                                                                            
+                                                                                                                                                                              
+⏺ Read(README.md)                                                                                                                                                             
+  ⎿  Read 20 lines                                                                                                                                                            
+                                                                                                                                                                              
+⏺ Yes, the Production Logger (Winston/Pino) is there. But the async initialization issue for password hashing is not mentioned. Let me add it to the Known Limitations        
+  section.                                                                                                                                                                    
+                                                                                                                                                                              
+⏺ Update(README.md)                                                                                                                                                           
+  ⎿  Added 1 line                                                                                                                                                             
+      480  2. **Single Instance** - Not designed for horizontal scaling without a database                                                                                    
+      481  3. **No User Registration** - Only seeded users can authenticate                                                                                                   
+      482  4. **UTC Only** - No timezone handling (all times assumed UTC)                                                                                                     
+      483 +5. **Synchronous Password Hashing** - Uses `bcrypt.hashSync()` for seed data; production should use async initialization to avoid blocking the event loop          
+      484                                                                                                                                                                     
+      485  ## Scripts Reference                                                                                                                                               
+      486                                                                                                                                                                     
+                                                                                                                                                                              
+⏺ Done. Now let me continue cleaning up the remaining code files.                                                                                                             
+                                                                                                                                                                              
+⏺ Write(controllers/login.ts)                                                                                                                                                 
+  ⎿  Removed 19 lines                                                                                                                                                         
+       2  import { login } from '../services/authService';                                                                                                                    
+       3  import { LoginInput } from '../validators/reservationValidator';                                                                                                    
+       4                                                                                                                                                                      
+       5 -/**                                                                                                                                                                 
+       6 - * Login Controller                                                                                                                                                 
+       7 - * ----------------                                                                                                                                                 
+       8 - * Handles POST /api/login                                                                                                                                          
+       9 - *                                                                                                                                                                  
+      10 - * Controllers are intentionally thin - they only:                                                                                                                  
+      11 - * 1. Extract data from the request (already validated by middleware)                                                                                               
+      12 - * 2. Call the appropriate service method                                                                                                                           
+      13 - * 3. Format and send the response                                                                                                                                  
+      14 - *                                                                                                                                                                  
+      15 - * All business logic lives in the service layer.                                                                                                                   
+      16 - *                                                                                                                                                                  
+      17 - * TypeScript Concept: Request Body Typing                                                                                                                          
+      18 - * ---------------------------------------                                                                                                                          
+      19 - * Request<Params, ResBody, ReqBody> is a generic type. By passing                                                                                                  
+      20 - * LoginInput as the third type parameter, we tell TypeScript that                                                                                                  
+      21 - * req.body will have the shape of LoginInput (username, password).                                                                                                 
+      22 - */                                                                                                                                                                 
+       5  export async function loginController(                                                                                                                              
+       6    req: Request<object, object, LoginInput>,                                                                                                                         
+       7    res: Response,                                                                                                                                                    
+     ...                                                                                                                                                                      
+      17        data: result,                                                                                                                                                 
+      18      });                                                                                                                                                             
+      19    } catch (error) {                                                                                                                                                 
+      38 -    // Pass errors to the error handling middleware                                                                                                                 
+      20      next(error);                                                                                                                                                    
+      21    }                                                                                                                                                                 
+      22  }                                                                                                                                                                   
+                                                                                                                                                                              
+⏺ Write(controllers/reservations.ts)                                                                                                                                          
+  ⎿  Removed 40 lines                                                                                                                                                         
+       6  import { CreateReservationInput } from '../validators/reservationValidator';                                                                                        
+       7  import { UnauthorizedError } from '../errors/ApiError';                                                                                                             
+       8                                                                                                                                                                      
+       9 -/**                                                                                                                                                                 
+      10 - * Reservations Controller                                                                                                                                          
+      11 - * -----------------------                                                                                                                                          
+      12 - * Handles reservation-related HTTP endpoints.                                                                                                                      
+      13 - *                                                                                                                                                                  
+      14 - * Each handler is thin (5-15 lines) because:                                                                                                                       
+      15 - * - Validation happens in middleware (Zod)                                                                                                                         
+      16 - * - Business logic happens in services                                                                                                                             
+      17 - * - Error handling happens in error middleware                                                                                                                     
+      18 - */                                                                                                                                                                 
+      19 -                                                                                                                                                                    
+      20 -/**                                                                                                                                                                 
+      21 - * Create Reservation Handler                                                                                                                                       
+      22 - * --------------------------                                                                                                                                       
+      23 - * POST /api/reservations                                                                                                                                           
+      24 - *                                                                                                                                                                  
+      25 - * TypeScript Concept: Non-null Assertion (!)                                                                                                                       
+      26 - * ------------------------------------------                                                                                                                       
+      27 - * After our auth middleware runs, req.user is definitely set.                                                                                                      
+      28 - * But TypeScript doesn't know this - it still sees req.user as                                                                                                     
+      29 - * 'TokenPayload | undefined'.                                                                                                                                      
+      30 - *                                                                                                                                                                  
+      31 - * The '!' operator (non-null assertion) tells TypeScript "trust me,                                                                                                
+      32 - * this isn't null/undefined". Use sparingly and only when you're certain.                                                                                          
+      33 - *                                                                                                                                                                  
+      34 - * Alternatively, you could check: if (!req.user) throw new Error();                                                                                                
+      35 - */                                                                                                                                                                 
+       9  export async function createReservationController(                                                                                                                  
+      10    req: Request<object, object, CreateReservationInput>,                                                                                                             
+      11    res: Response,                                                                                                                                                    
+      12    next: NextFunction                                                                                                                                                
+      13  ): Promise<void> {                                                                                                                                                  
+      14    try {                                                                                                                                                             
+      42 -    // Auth middleware ensures req.user exists on protected routes                                                                                                  
+      15      if (!req.user) {                                                                                                                                                
+      16        throw new UnauthorizedError('Authentication required');                                                                                                       
+      17      }                                                                                                                                                               
+     ...                                                                                                                                                                      
+      24        userId                                                                                                                                                        
+      25      );                                                                                                                                                              
+      26                                                                                                                                                                      
+      55 -    // Different status and message based on whether we created or updated                                                                                          
+      27      if (result.wasUpdated) {                                                                                                                                        
+      28        res.status(200).json({                                                                                                                                        
+      29          message: 'Your existing reservation has been updated to the new time slot',                                                                                 
+     ...                                                                                                                                                                      
+      40    }                                                                                                                                                                 
+      41  }                                                                                                                                                                   
+      42                                                                                                                                                                      
+      72 -/**                                                                                                                                                                 
+      73 - * Delete Reservation Handler                                                                                                                                       
+      74 - * --------------------------                                                                                                                                       
+      75 - * DELETE /api/reservations/:id                                                                                                                                     
+      76 - *                                                                                                                                                                  
+      77 - * TypeScript Concept: Typed URL Parameters                                                                                                                         
+      78 - * ----------------------------------------                                                                                                                         
+      79 - * Request<{ id: string }> tells TypeScript that req.params.id exists                                                                                               
+      80 - * and is a string. This gives you autocompletion and type checking.                                                                                                
+      81 - */                                                                                                                                                                 
+      43  export async function deleteReservationController(                                                                                                                  
+      44    req: Request<{ id: string }>,                                                                                                                                     
+      45    res: Response,                                                                                                                                                    
+     ...                                                                                                                                                                      
+       55                                                                                                                                                                     
+       56      await cancelReservation(id, userId);                                                                                                                           
+       57                                                                                                                                                                     
+       97 -    // 204 No Content - successful deletion with no response body                                                                                                  
+       58      res.status(204).send();                                                                                                                                        
+       59    } catch (error) {                                                                                                                                                
+       60      next(error);                                                                                                                                                   
+                                                                                                                                                                              
+⏺ Write(controllers/rooms.ts)                                                                                                                                                 
+  ⎿  Removed 13 lines                                                                                                                                                         
+       2  import { getRoomReservations } from '../services/reservationService';                                                                                               
+       3  import { UnauthorizedError } from '../errors/ApiError';                                                                                                             
+       4                                                                                                                                                                      
+       5 -/**                                                                                                                                                                 
+       6 - * Rooms Controller                                                                                                                                                 
+       7 - * ----------------                                                                                                                                                 
+       8 - * Handles room-related HTTP endpoints.                                                                                                                             
+       9 - */                                                                                                                                                                 
+      10 -                                                                                                                                                                    
+      11 -/**                                                                                                                                                                 
+      12 - * Get Room Reservations Handler                                                                                                                                    
+      13 - * -----------------------------                                                                                                                                    
+      14 - * GET /api/rooms/:roomId/reservations                                                                                                                              
+      15 - *                                                                                                                                                                  
+      16 - * Returns all reservations for a specific room.                                                                                                                    
+      17 - */                                                                                                                                                                 
+       5  export async function getRoomReservationsController(                                                                                                                
+       6    req: Request<{ roomId: string }>,                                                                                                                                 
+       7    res: Response,                                                                                                                                                    
+                                                                                                                                                                              
+⏺ Write(services/authService.ts)                                                                                                                                              
+  ⎿  Removed 38 lines                                                                                                                                                         
+       5  import { findUserByUsername, verifyPassword } from '../models/user';                                                                                                
+       6  import { UnauthorizedError } from '../errors/ApiError';                                                                                                             
+       7                                                                                                                                                                      
+       8 -/**                                                                                                                                                                 
+       9 - * Authentication Service                                                                                                                                           
+      10 - * ----------------------                                                                                                                                           
+      11 - * Handles user authentication and JWT token generation.                                                                                                            
+      12 - * This service contains all auth-related business logic.                                                                                                           
+      13 - */                                                                                                                                                                 
+      14 -                                                                                                                                                                    
+      15 -/**                                                                                                                                                                 
+      16 - * Login Result Interface                                                                                                                                           
+      17 - * ----------------------                                                                                                                                           
+      18 - * Defines what the login function returns on success.                                                                                                              
+      19 - */                                                                                                                                                                 
+       8  interface LoginResult {                                                                                                                                             
+       9    token: string;                                                                                                                                                    
+      10    user: {                                                                                                                                                           
+     ...                                                                                                                                                                      
+      14    };                                                                                                                                                                
+      15  }                                                                                                                                                                   
+      16                                                                                                                                                                      
+      29 -/**                                                                                                                                                                 
+      30 - * Authenticate a user and generate a JWT token                                                                                                                     
+      31 - *                                                                                                                                                                  
+      32 - * TypeScript Concept: Async Functions with Typed Returns                                                                                                           
+      33 - * ------------------------------------------------------                                                                                                           
+      34 - * 'async' functions always return a Promise. The return type                                                                                                       
+      35 - * Promise<LoginResult> means the resolved value will be a LoginResult.                                                                                             
+      36 - *                                                                                                                                                                  
+      37 - * If the function throws, the Promise rejects instead of resolving.                                                                                                
+      38 - */                                                                                                                                                                 
+      17  export async function login(                                                                                                                                        
+      18    username: string,                                                                                                                                                 
+      19    password: string                                                                                                                                                  
+      20  ): Promise<LoginResult> {                                                                                                                                           
+      21    logger.debug('Login attempt', { username });                                                                                                                      
+      22                                                                                                                                                                      
+      45 -  // Find user by username                                                                                                                                          
+      23    const user = findUserByUsername(username);                                                                                                                        
+      24                                                                                                                                                                      
+      25    if (!user) {                                                                                                                                                      
+      49 -    // User not found - use generic message to avoid username enumeration                                                                                           
+      26      logger.debug('Login failed - user not found', { username });                                                                                                    
+      27      throw new UnauthorizedError(                                                                                                                                    
+      28        'Invalid username or password. Please check your credentials and try again.'                                                                                  
+      29      );                                                                                                                                                              
+      30    }                                                                                                                                                                 
+      31                                                                                                                                                                      
+      56 -  // Verify password                                                                                                                                                
+      32    const isValid = await verifyPassword(password, user.passwordHash);                                                                                                
+      33                                                                                                                                                                      
+      34    if (!isValid) {                                                                                                                                                   
+     ...                                                                                                                                                                      
+      38      );                                                                                                                                                              
+      39    }                                                                                                                                                                 
+      40                                                                                                                                                                      
+      66 -  // Create token payload                                                                                                                                           
+      41    const payload: TokenPayload = {                                                                                                                                   
+      42      userId: user.userId,                                                                                                                                            
+      43      username: user.username,                                                                                                                                        
+      44    };                                                                                                                                                                
+      45                                                                                                                                                                      
+      72 -  /**                                                                                                                                                               
+      73 -   * TypeScript Concept: Type Assertion for Library Types                                                                                                           
+      74 -   * ----------------------------------------------------                                                                                                           
+      75 -   * jwt.sign has complex overloaded types. We use 'as string' because                                                                                              
+      76 -   * we know with these options it returns a string synchronously.                                                                                                  
+      77 -   */                                                                                                                                                               
+      46    const token = jwt.sign(payload, config.JWT_SECRET, {                                                                                                              
+      47      expiresIn: config.JWT_EXPIRES_IN,                                                                                                                               
+      48    }) as string;                                                                                                                                                     
+     ...                                                                                                                                                                      
+       59    };                                                                                                                                                               
+       60  }                                                                                                                                                                  
+       61                                                                                                                                                                     
+       94 -/**                                                                                                                                                                
+       95 - * Verify a JWT token and return the payload                                                                                                                       
+       96 - *                                                                                                                                                                 
+       97 - * This is useful for cases where you need to verify a token                                                                                                       
+       98 - * outside of the middleware context.                                                                                                                              
+       99 - */                                                                                                                                                                
+       62  export function verifyToken(token: string): TokenPayload {                                                                                                         
+       63    try {                                                                                                                                                            
+       64      return jwt.verify(token, config.JWT_SECRET) as TokenPayload;                                                                                                   
+                                                                                                                                                                              
+⏺ Write(validators/reservationValidator.ts)                                                                                                                                   
+  ⎿  Removed 114 lines                                                                                                                                                        
+       1  import { z } from 'zod';                                                                                                                                            
+       2                                                                                                                                                                      
+       3 -/**                                                                                                                                                                 
+       4 - * TypeScript Concept: Runtime vs Compile-Time Validation                                                                                                           
+       5 - * ------------------------------------------------------                                                                                                           
+       6 - * TypeScript interfaces only exist at compile time - they disappear when                                                                                           
+       7 - * your code runs. They can't validate data coming from external sources                                                                                            
+       8 - * (API requests, databases, etc.) at runtime.                                                                                                                      
+       9 - *                                                                                                                                                                  
+      10 - * Zod fills this gap: it validates data at runtime AND can infer TypeScript                                                                                        
+      11 - * types from schemas. This gives you:                                                                                                                              
+      12 - * - Runtime validation (catches bad data when your app runs)                                                                                                       
+      13 - * - Type inference (TypeScript knows the validated data's shape)                                                                                                   
+      14 - * - User-friendly error messages                                                                                                                                   
+      15 - *                                                                                                                                                                  
+      16 - * Why Zod over alternatives?                                                                                                                                       
+      17 - * - TypeScript-first design                                                                                                                                        
+      18 - * - Zero dependencies                                                                                                                                              
+      19 - * - Excellent type inference                                                                                                                                       
+      20 - * - Composable schemas                                                                                                                                             
+      21 - */                                                                                                                                                                 
+      22 -                                                                                                                                                                    
+      23 -/**                                                                                                                                                                 
+      24 - * Login Schema                                                                                                                                                     
+      25 - * ------------                                                                                                                                                     
+      26 - * Validates the login request body.                                                                                                                                
+      27 - *                                                                                                                                                                  
+      28 - * z.object() defines an object schema                                                                                                                              
+      29 - * z.string() defines a string field                                                                                                                                
+      30 - * .min(1) ensures the string isn't empty                                                                                                                           
+      31 - */                                                                                                                                                                 
+       3  export const loginSchema = z.object({                                                                                                                               
+       4    username: z                                                                                                                                                       
+       5      .string({                                                                                                                                                       
+     ...                                                                                                                                                                      
+       16      .min(1, 'Password cannot be empty'),                                                                                                                           
+       17  });                                                                                                                                                                
+       18                                                                                                                                                                     
+       48 -/**                                                                                                                                                                
+       49 - * TypeScript Concept: Type Inference from Zod Schemas                                                                                                             
+       50 - * ---------------------------------------------------                                                                                                             
+       51 - * z.infer<typeof schema> extracts the TypeScript type from a Zod schema.                                                                                          
+       52 - * This means you define your validation ONCE and get the type for free.                                                                                           
+       53 - *                                                                                                                                                                 
+       54 - * The 'typeof' operator here gets the type of the schema variable,                                                                                                
+       55 - * and z.infer extracts what shape data would have after validation.                                                                                               
+       56 - */                                                                                                                                                                
+       19  export type LoginInput = z.infer<typeof loginSchema>;                                                                                                              
+       20                                                                                                                                                                     
+       59 -/**                                                                                                                                                                
+       60 - * Time Format Regex                                                                                                                                               
+       61 - * -----------------                                                                                                                                               
+       62 - * Matches 24-hour time format: HH:MM                                                                                                                              
+       63 - * Examples: 09:00, 13:30, 23:59                                                                                                                                   
+       64 - */                                                                                                                                                                
+       21  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;                                                                                                                   
+       66 -                                                                                                                                                                   
+       67 -/**                                                                                                                                                                
+       68 - * Date Format Regex                                                                                                                                               
+       69 - * -----------------                                                                                                                                               
+       70 - * Matches ISO date format: YYYY-MM-DD                                                                                                                             
+       71 - * Examples: 2026-06-15, 2026-12-31                                                                                                                                
+       72 - */                                                                                                                                                                
+       22  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;                                                                                                                           
+       74 -                                                                                                                                                                   
+       75 -/**                                                                                                                                                                
+       76 - * Maximum booking duration in hours                                                                                                                               
+       77 - * Prevents unreasonably long bookings                                                                                                                             
+       78 - */                                                                                                                                                                
+       23  const MAX_BOOKING_DURATION_HOURS = 12;                                                                                                                             
+       24                                                                                                                                                                     
+       81 -/**                                                                                                                                                                
+       82 - * Convert time string to minutes since midnight                                                                                                                   
+       83 - */                                                                                                                                                                
+       25  function timeToMinutes(time: string): number {                                                                                                                     
+       26    const [hours, minutes] = time.split(':').map(Number);                                                                                                            
+       27    return hours * 60 + minutes;                                                                                                                                     
+       28  }                                                                                                                                                                  
+       29                                                                                                                                                                     
+       89 -/**                                                                                                                                                                
+       90 - * Calculate booking duration in minutes                                                                                                                           
+       91 - * Handles both same-day and midnight-spanning bookings                                                                                                            
+       92 - */                                                                                                                                                                
+       30  function calculateDurationMinutes(startTime: string, endTime: string): number {                                                                                    
+       31    const startMinutes = timeToMinutes(startTime);                                                                                                                   
+       32    const endMinutes = timeToMinutes(endTime);                                                                                                                       
+       33                                                                                                                                                                     
+       34    if (endMinutes > startMinutes) {                                                                                                                                 
+       98 -    // Same-day booking (e.g., 09:00 to 17:00)                                                                                                                     
+       35      return endMinutes - startMinutes;                                                                                                                              
+       36    } else {                                                                                                                                                         
+      101 -    // Midnight-spanning booking (e.g., 23:00 to 02:00)                                                                                                            
+      102 -    // Duration = time until midnight + time after midnight                                                                                                        
+       37      return (24 * 60 - startMinutes) + endMinutes;                                                                                                                  
+       38    }                                                                                                                                                                
+       39  }                                                                                                                                                                  
+       40                                                                                                                                                                     
+      107 -/**                                                                                                                                                                
+      108 - * Create Reservation Schema                                                                                                                                       
+      109 - * -------------------------                                                                                                                                       
+      110 - * Validates the request body for creating a reservation.                                                                                                          
+      111 - *                                                                                                                                                                 
+      112 - * Supports:                                                                                                                                                       
+      113 - * - Flexible booking durations (any start/end time, not just 1-hour slots)                                                                                        
+      114 - * - Midnight-spanning bookings (when endTime < startTime)                                                                                                         
+      115 - * - Maximum duration of 12 hours                                                                                                                                  
+      116 - *                                                                                                                                                                 
+      117 - * Zod Concept: Custom Validation with .refine()                                                                                                                   
+      118 - * ---------------------------------------------                                                                                                                   
+      119 - * .refine() lets you add custom validation logic that goes beyond                                                                                                 
+      120 - * simple type checking. It takes a function that returns true if                                                                                                  
+      121 - * valid, false if invalid.                                                                                                                                        
+      122 - */                                                                                                                                                                
+       41  export const createReservationSchema = z                                                                                                                           
+       42    .object({                                                                                                                                                        
+       43      roomId: z                                                                                                                                                      
+     ...                                                                                                                                                                      
+       68        })                                                                                                                                                           
+       69        .regex(timeRegex, 'End time must be in HH:MM format (24-hour)'),                                                                                             
+       70    })                                                                                                                                                               
+      153 -  /**                                                                                                                                                              
+      154 -   * Zod Concept: Object-Level Refinements with .refine()                                                                                                          
+      155 -   * ----------------------------------------------------                                                                                                          
+      156 -   * When you chain .refine() after z.object(), you get access to the                                                                                              
+      157 -   * entire object, allowing cross-field validation.                                                                                                               
+      158 -   */                                                                                                                                                              
+       71    .refine(                                                                                                                                                         
+       72      (data) => {                                                                                                                                                    
+      161 -      // Validate that the start date is valid (not just format, but actual date)                                                                                  
+       73        const date = new Date(data.startDate);                                                                                                                       
+       74        return !isNaN(date.getTime());                                                                                                                               
+       75      },                                                                                                                                                             
+     ...                                                                                                                                                                      
+       80    )                                                                                                                                                                
+       81    .refine(                                                                                                                                                         
+       82      (data) => {                                                                                                                                                    
+      172 -      // Validate that start and end times are different                                                                                                           
+       83        return data.startTime !== data.endTime;                                                                                                                      
+       84      },                                                                                                                                                             
+       85      {                                                                                                                                                              
+     ...                                                                                                                                                                      
+       89    )                                                                                                                                                                
+       90    .refine(                                                                                                                                                         
+       91      (data) => {                                                                                                                                                    
+      182 -      // Validate maximum duration (12 hours)                                                                                                                      
+       92        const durationMinutes = calculateDurationMinutes(data.startTime, data.endTime);                                                                              
+       93        const maxDurationMinutes = MAX_BOOKING_DURATION_HOURS * 60;                                                                                                  
+       94        return durationMinutes <= maxDurationMinutes;                                                                                                                
+     ...                                                                                                                                                                      
+      100    )                                                                                                                                                                
+      101    .refine(                                                                                                                                                         
+      102      (data) => {                                                                                                                                                    
+      194 -      // Validate minimum duration (at least 30 minutes)                                                                                                           
+      103        const durationMinutes = calculateDurationMinutes(data.startTime, data.endTime);                                                                              
+      104        return durationMinutes >= 30;                                                                                                                                
+      105      },                                                                                                                                                             
+     ...                                                                                                                                                                      
+      111                                                                                                                                                                     
+      112  export type CreateReservationInput = z.infer<typeof createReservationSchema>;                                                                                      
+      113                                                                                                                                                                     
+      206 -/**                                                                                                                                                                
+      207 - * Room ID Parameter Schema                                                                                                                                        
+      208 - * ------------------------                                                                                                                                        
+      209 - * For validating URL parameters like /rooms/:roomId                                                                                                               
+      210 - */                                                                                                                                                                
+      114  export const roomIdSchema = z.object({                                                                                                                             
+      115    roomId: z                                                                                                                                                        
+      116      .string({                                                                                                                                                      
+     ...                                                                                                                                                                      
+      119      .min(1, 'Room ID cannot be empty'),                                                                                                                            
+      120  });                                                                                                                                                                
+      121                                                                                                                                                                     
+      219 -/**                                                                                                                                                                
+      220 - * Reservation ID Parameter Schema                                                                                                                                 
+      221 - * -------------------------------                                                                                                                                 
+      222 - * For validating URL parameters like /reservations/:id                                                                                                            
+      223 - */                                                                                                                                                                
+      122  export const reservationIdSchema = z.object({                                                                                                                      
+      123    id: z                                                                                                                                                            
+      124      .string({                                                                                                                                                      
+     ...                                                                                                                                                                      
+      127      .min(1, 'Reservation ID cannot be empty'),                                                                                                                     
+      128  });                                                                                                                                                                
+      129                                                                                                                                                                     
+      232 -/**                                                                                                                                                                
+      233 - * Zod Concept: Formatting Errors for Users                                                                                                                        
+      234 - * ----------------------------------------                                                                                                                        
+      235 - * Zod errors can be complex nested structures. This helper function                                                                                               
+      236 - * extracts user-friendly messages from validation errors.                                                                                                         
+      237 - */                                                                                                                                                                
+      130  export function formatZodErrors(error: z.ZodError): string[] {                                                                                                     
+      131    return error.errors.map((err) => {                                                                                                                               
+      240 -    // If there's a path, include it in the message                                                                                                                
+      132      const path = err.path.length > 0 ? `${err.path.join('.')}: ` : '';                                                                                             
+      133      return `${path}${err.message}`;                                                                                                                                
+      134    });                                                                                                                                                              
+      135  }                                                                                                                                                                  
+      136                                                                                                                                                                     
+      246 -/**                                                                                                                                                                
+      247 - * Helper function to get the first error message                                                                                                                  
+      248 - * ----------------------------------------------                                                                                                                  
+      249 - * Often you just want to show one error at a time to the user.                                                                                                    
+      250 - */                                                                                                                                                                
+      137  export function getFirstZodError(error: z.ZodError): string {                                                                                                      
+      138    const messages = formatZodErrors(error);                                                                                                                         
+      139    return messages[0] || 'Validation failed';                                                                                                                       
+                                                                                                                                                                              
+⏺ Write(services/reservationService.ts)                                                                                                                                       
+  ⎿  Added 5 lines, removed 181 lines                                                                                                                                         
+      17  } from '../errors/ApiError';                                                                                                                                        
+      18  import logger from '../utils/logger';                                                                                                                               
+      19                                                                                                                                                                      
+      20 -/**                                                                                                                                                                 
+      21 - * Reservation Service                                                                                                                                              
+      22 - * -------------------                                                                                                                                              
+      23 - * Contains all business logic for reservation operations.                                                                                                          
+      24 - *                                                                                                                                                                  
+      25 - * Why a Service Layer?                                                                                                                                             
+      26 - * --------------------                                                                                                                                             
+      27 - * 1. Testability: Business logic can be tested without HTTP                                                                                                        
+      28 - * 2. Reusability: Same logic can be used by different controllers                                                                                                  
+      29 - * 3. Separation: Controllers handle HTTP, services handle business rules                                                                                           
+      30 - * 4. Maintainability: Changes to business rules happen in one place                                                                                                
+      31 - */                                                                                                                                                                 
+      32 -                                                                                                                                                                    
+      33 -/**                                                                                                                                                                 
+      34 - * Result type for creating reservations                                                                                                                            
+      35 - * -------------------------------------                                                                                                                            
+      36 - * Indicates whether the reservation was created new or updated existing.                                                                                           
+      37 - */                                                                                                                                                                 
+      20  interface CreateReservationResult {                                                                                                                                 
+      21    reservation: Reservation;                                                                                                                                         
+      22    wasUpdated: boolean;                                                                                                                                              
+      23  }                                                                                                                                                                   
+      24                                                                                                                                                                      
+      43 -/**                                                                                                                                                                 
+      44 - * Check if a time slot is in the past                                                                                                                              
+      45 - *                                                                                                                                                                  
+      46 - * TypeScript Concept: Date Handling                                                                                                                                
+      47 - * ---------------------------------                                                                                                                                
+      48 - * JavaScript Date objects can be tricky. We construct a Date from                                                                                                  
+      49 - * the ISO date string and time, then compare to now.                                                                                                               
+      50 - */                                                                                                                                                                 
+      25  function isTimeSlotInPast(startDate: string, startTime: string): boolean {                                                                                          
+      52 -  // Construct full datetime string (assuming UTC for simplicity)                                                                                                   
+      26    const dateTimeString = `${startDate}T${startTime}:00`;                                                                                                            
+      27    const slotTime = new Date(dateTimeString);                                                                                                                        
+      28    const now = new Date();                                                                                                                                           
+      56 -                                                                                                                                                                    
+      29    return slotTime <= now;                                                                                                                                           
+      30  }                                                                                                                                                                   
+      31                                                                                                                                                                      
+      60 -/**                                                                                                                                                                 
+      61 - * Convert time string (HH:MM) to minutes since midnight                                                                                                            
+      62 - */                                                                                                                                                                 
+      32  function timeToMinutes(time: string): number {                                                                                                                      
+      33    const [hours, minutes] = time.split(':').map(Number);                                                                                                             
+      34    return hours * 60 + minutes;                                                                                                                                      
+      35  }                                                                                                                                                                   
+      36                                                                                                                                                                      
+      68 -/**                                                                                                                                                                 
+      69 - * Convert minutes to time string (HH:MM format)                                                                                                                    
+      70 - */                                                                                                                                                                 
+      37  function minutesToTime(minutes: number): string {                                                                                                                   
+      38    const hours = Math.floor(minutes / 60) % 24;                                                                                                                      
+      39    const mins = minutes % 60;                                                                                                                                        
+      40    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;                                                                                
+      41  }                                                                                                                                                                   
+      42                                                                                                                                                                      
+      77 -/**                                                                                                                                                                 
+      78 - * Check if a booking spans midnight                                                                                                                                
+      79 - * (when endTime is earlier than or equal to startTime in HH:MM format)                                                                                             
+      80 - */                                                                                                                                                                 
+      43  function spansMidnight(startTime: string, endTime: string): boolean {                                                                                               
+      44    return timeToMinutes(endTime) <= timeToMinutes(startTime);                                                                                                        
+      45  }                                                                                                                                                                   
+      46                                                                                                                                                                      
+      85 -/**                                                                                                                                                                 
+      86 - * Calculate endDate based on startDate and times                                                                                                                   
+      87 - * If booking spans midnight, endDate is the next day                                                                                                               
+      88 - */                                                                                                                                                                 
+      47  function calculateEndDate(startDate: string, startTime: string, endTime: string): string {                                                                          
+      48    if (spansMidnight(startTime, endTime)) {                                                                                                                          
+      49      return getNextDate(startDate);                                                                                                                                  
+     ...                                                                                                                                                                      
+       51    return startDate;                                                                                                                                                
+       52  }                                                                                                                                                                  
+       53                                                                                                                                                                     
+       96 -/**                                                                                                                                                                
+       97 - * Get the previous day's date string (YYYY-MM-DD)                                                                                                                 
+       98 - */                                                                                                                                                                
+       54  function getPreviousDate(date: string): string {                                                                                                                   
+       55    const d = new Date(date);                                                                                                                                        
+       56    d.setDate(d.getDate() - 1);                                                                                                                                      
+       57    return d.toISOString().split('T')[0];                                                                                                                            
+       58  }                                                                                                                                                                  
+       59                                                                                                                                                                     
+      105 -/**                                                                                                                                                                
+      106 - * Get the next day's date string (YYYY-MM-DD)                                                                                                                     
+      107 - */                                                                                                                                                                
+       60  function getNextDate(date: string): string {                                                                                                                       
+       61    const d = new Date(date);                                                                                                                                        
+       62    d.setDate(d.getDate() + 1);                                                                                                                                      
+       63    return d.toISOString().split('T')[0];                                                                                                                            
+       64  }                                                                                                                                                                  
+       65                                                                                                                                                                     
+      114 -/**                                                                                                                                                                
+      115 - * Check if a date is in the past (before today)                                                                                                                   
+      116 - */                                                                                                                                                                
+       66  function isDateInPast(date: string): boolean {                                                                                                                     
+       67    const today = new Date();                                                                                                                                        
+       68    today.setHours(0, 0, 0, 0);                                                                                                                                      
+     ...                                                                                                                                                                      
+       70    return checkDate < today;                                                                                                                                        
+       71  }                                                                                                                                                                  
+       72                                                                                                                                                                     
+      124 -/**                                                                                                                                                                
+      125 - * Slot suggestion with optional date (for adjacent day suggestions)                                                                                               
+      126 - */                                                                                                                                                                
+       73  interface SlotSuggestion {                                                                                                                                         
+      128 -  time: string; // e.g., "09:00-10:30"                                                                                                                             
+      129 -  date?: string; // e.g., "2026-06-03" (only set if different from requested date)                                                                                 
+       74 +  time: string;                                                                                                                                                    
+       75 +  date?: string;                                                                                                                                                   
+       76  }                                                                                                                                                                  
+       77                                                                                                                                                                     
+      132 -/**                                                                                                                                                                
+      133 - * Interval representing a booked time period                                                                                                                      
+      134 - */                                                                                                                                                                
+       78  interface BookedInterval {                                                                                                                                         
+      136 -  start: number; // minutes from midnight                                                                                                                          
+      137 -  end: number; // minutes from midnight (can be > 24*60 for midnight-spanning)                                                                                     
+       79 +  start: number;                                                                                                                                                   
+       80 +  end: number;                                                                                                                                                     
+       81  }                                                                                                                                                                  
+       82                                                                                                                                                                     
+      140 -/**                                                                                                                                                                
+      141 - * Get all booked intervals for a room on a specific date                                                                                                          
+      142 - * Returns intervals in minutes from midnight, handling midnight-spanning bookings                                                                                 
+      143 - */                                                                                                                                                                
+       83  function getBookedIntervalsOnDate(                                                                                                                                 
+       84    roomId: string,                                                                                                                                                  
+       85    date: string                                                                                                                                                     
+     ...                                                                                                                                                                      
+       92      const endMin = timeToMinutes(res.endTime);                                                                                                                     
+       93                                                                                                                                                                     
+       94      if (res.startDate === date && res.endDate === date) {                                                                                                          
+      156 -      // Same-day booking that starts and ends on this date                                                                                                        
+       95        intervals.push({ start: startMin, end: endMin });                                                                                                            
+       96      } else if (res.startDate === date && res.endDate !== date) {                                                                                                   
+      159 -      // Booking starts on this date and spans to next day                                                                                                         
+       97        intervals.push({ start: startMin, end: 24 * 60 });                                                                                                           
+       98      } else if (res.startDate !== date && res.endDate === date) {                                                                                                   
+      162 -      // Booking started on previous day and ends on this date                                                                                                     
+       99        intervals.push({ start: 0, end: endMin });                                                                                                                   
+      100      }                                                                                                                                                              
+      101    }                                                                                                                                                                
+      102                                                                                                                                                                     
+      167 -  // Sort by start time                                                                                                                                            
+      103    intervals.sort((a, b) => a.start - b.start);                                                                                                                     
+      104    return intervals;                                                                                                                                                
+      105  }                                                                                                                                                                  
+      106                                                                                                                                                                     
+      172 -/**                                                                                                                                                                
+      173 - * Find available time windows on a specific date for a room                                                                                                       
+      174 - * Returns windows that could fit a booking of the specified duration                                                                                              
+      175 - */                                                                                                                                                                
+      107  function findAvailableWindowsOnDate(                                                                                                                               
+      108    roomId: string,                                                                                                                                                  
+      109    date: string,                                                                                                                                                    
+     ...                                                                                                                                                                      
+      112    const bookedIntervals = getBookedIntervalsOnDate(roomId, date);                                                                                                  
+      113    const windows: Array<{ start: number; end: number }> = [];                                                                                                       
+      114                                                                                                                                                                     
+      184 -  // Merge overlapping intervals                                                                                                                                   
+      115    const mergedIntervals: BookedInterval[] = [];                                                                                                                    
+      116    for (const interval of bookedIntervals) {                                                                                                                        
+      117      if (mergedIntervals.length === 0 || mergedIntervals[mergedIntervals.length - 1].end < interval.start) {                                                        
+     ...                                                                                                                                                                      
+      124      }                                                                                                                                                              
+      125    }                                                                                                                                                                
+      126                                                                                                                                                                     
+      197 -  // Find gaps between booked intervals                                                                                                                            
+      127    let currentStart = 0;                                                                                                                                            
+      128    for (const interval of mergedIntervals) {                                                                                                                        
+      129      if (interval.start > currentStart) {                                                                                                                           
+     ...                                                                                                                                                                      
+      135      currentStart = Math.max(currentStart, interval.end);                                                                                                           
+      136    }                                                                                                                                                                
+      137                                                                                                                                                                     
+      209 -  // Check if there's space after the last booking until end of day                                                                                                
+      138    if (currentStart < 24 * 60) {                                                                                                                                    
+      139      const gapSize = 24 * 60 - currentStart;                                                                                                                        
+      140      if (gapSize >= durationMinutes) {                                                                                                                              
+     ...                                                                                                                                                                      
+      145    return windows;                                                                                                                                                  
+      146  }                                                                                                                                                                  
+      147                                                                                                                                                                     
+      220 -/**                                                                                                                                                                
+      221 - * Maximum number of days to search for available slots                                                                                                            
+      222 - * Prevents infinite loops while providing reasonable coverage                                                                                                     
+      223 - */                                                                                                                                                                
+      148  const MAX_SEARCH_DAYS = 30;                                                                                                                                        
+      149                                                                                                                                                                     
+      226 -/**                                                                                                                                                                
+      227 - * Find the nearest available time slots before and after a given time                                                                                             
+      228 - *                                                                                                                                                                 
+      229 - * Returns suggestions for alternative booking times when a conflict occurs.                                                                                       
+      230 - * Suggests windows that can fit a booking of the specified duration.                                                                                              
+      231 - * First searches the same day, then iterates through previous/next days                                                                                           
+      232 - * until an available slot is found (up to MAX_SEARCH_DAYS).                                                                                                       
+      233 - */                                                                                                                                                                
+      150  function findNearestAvailableSlots(                                                                                                                                
+      151    roomId: string,                                                                                                                                                  
+      152    date: string,                                                                                                                                                    
+     ...                                                                                                                                                                      
+      156    let before: SlotSuggestion | null = null;                                                                                                                        
+      157    let after: SlotSuggestion | null = null;                                                                                                                         
+      158                                                                                                                                                                     
+      243 -  // Get available windows on the requested date                                                                                                                   
+      159    const sameDayWindows = findAvailableWindowsOnDate(roomId, date, durationMinutes);                                                                                
+      160                                                                                                                                                                     
+      246 -  // Search for nearest available slot before attempted time (same day)                                                                                            
+      161    for (const window of sameDayWindows) {                                                                                                                           
+      248 -    // Window must end before or at the attempted start time                                                                                                       
+      162      if (window.end <= attemptedStartMinutes && window.end - window.start >= durationMinutes) {                                                                     
+      250 -      // Find the latest possible start time in this window                                                                                                        
+      163        const latestStart = window.end - durationMinutes;                                                                                                            
+      164        const endTime = minutesToTime(latestStart + durationMinutes);                                                                                                
+      165        before = { time: `${minutesToTime(latestStart)}-${endTime}` };                                                                                               
+      166      }                                                                                                                                                              
+      167    }                                                                                                                                                                
+      168                                                                                                                                                                     
+      257 -  // Search for nearest available slot after attempted time (same day)                                                                                             
+      169    for (const window of sameDayWindows) {                                                                                                                           
+      259 -    // Window must start after the attempted start time                                                                                                            
+      170      if (window.start > attemptedStartMinutes) {                                                                                                                    
+      171        const endTime = minutesToTime(window.start + durationMinutes);                                                                                               
+      172        after = { time: `${minutesToTime(window.start)}-${endTime}` };                                                                                               
+     ...                                                                                                                                                                      
+      174      }                                                                                                                                                              
+      175    }                                                                                                                                                                
+      176                                                                                                                                                                     
+      267 -  // If no earlier slot on same day, search previous days (up to MAX_SEARCH_DAYS)                                                                                  
+      177    if (!before) {                                                                                                                                                   
+      178      let searchDate = date;                                                                                                                                         
+      179      for (let day = 0; day < MAX_SEARCH_DAYS; day++) {                                                                                                              
+      180        searchDate = getPreviousDate(searchDate);                                                                                                                    
+      181        if (isDateInPast(searchDate)) {                                                                                                                              
+      273 -        break; // Don't search past dates                                                                                                                          
+      182 +        break;                                                                                                                                                     
+      183        }                                                                                                                                                            
+      184        const dayWindows = findAvailableWindowsOnDate(roomId, searchDate, durationMinutes);                                                                          
+      185        if (dayWindows.length > 0) {                                                                                                                                 
+      277 -        // Find the latest window on this day                                                                                                                      
+      186          const lastWindow = dayWindows[dayWindows.length - 1];                                                                                                      
+      187          const latestStart = lastWindow.end - durationMinutes;                                                                                                      
+      188          const endTime = minutesToTime(latestStart + durationMinutes);                                                                                              
+     ...                                                                                                                                                                      
+      195      }                                                                                                                                                              
+      196    }                                                                                                                                                                
+      197                                                                                                                                                                     
+      290 -  // If no later slot on same day, search next days (up to MAX_SEARCH_DAYS)                                                                                        
+      198    if (!after) {                                                                                                                                                    
+      199      let searchDate = date;                                                                                                                                         
+      200      for (let day = 0; day < MAX_SEARCH_DAYS; day++) {                                                                                                              
+      201        searchDate = getNextDate(searchDate);                                                                                                                        
+      202        const dayWindows = findAvailableWindowsOnDate(roomId, searchDate, durationMinutes);                                                                          
+      203        if (dayWindows.length > 0) {                                                                                                                                 
+      297 -        // Find the earliest window on this day                                                                                                                    
+      204          const firstWindow = dayWindows[0];                                                                                                                         
+      205          const endTime = minutesToTime(firstWindow.start + durationMinutes);                                                                                        
+      206          after = {                                                                                                                                                  
+     ...                                                                                                                                                                      
+      215    return { before, after };                                                                                                                                        
+      216  }                                                                                                                                                                  
+      217                                                                                                                                                                     
+      312 -/**                                                                                                                                                                
+      313 - * Format a slot suggestion for display                                                                                                                            
+      314 - */                                                                                                                                                                
+      218  function formatSlotSuggestion(slot: SlotSuggestion): string {                                                                                                      
+      219    if (slot.date) {                                                                                                                                                 
+      220      return `${slot.date} at ${slot.time}`;                                                                                                                         
+     ...                                                                                                                                                                      
+      222    return slot.time;                                                                                                                                                
+      223  }                                                                                                                                                                  
+      224                                                                                                                                                                     
+      322 -/**                                                                                                                                                                
+      323 - * Build suggestion message for available time slots                                                                                                               
+      324 - */                                                                                                                                                                
+      225  function buildSuggestionMessage(                                                                                                                                   
+      226    before: SlotSuggestion | null,                                                                                                                                   
+      227    after: SlotSuggestion | null                                                                                                                                     
+     ...                                                                                                                                                                      
+      230    const afterOnDifferentDay = after?.date !== undefined;                                                                                                           
+      231                                                                                                                                                                     
+      232    if (before && after) {                                                                                                                                           
+      333 -    // Both suggestions available                                                                                                                                  
+      233      if (!beforeOnDifferentDay && !afterOnDifferentDay) {                                                                                                           
+      335 -      // Both on same day                                                                                                                                          
+      234        return ` Nearest available slots: ${before.time} (earlier) or ${after.time} (later).`;                                                                       
+      235      } else {                                                                                                                                                       
+      338 -      // At least one on different day - include full format                                                                                                       
+      236        return ` Nearest available slots: ${formatSlotSuggestion(before)} or ${formatSlotSuggestion(after)}.`;                                                       
+      237      }                                                                                                                                                              
+      238    } else if (before) {                                                                                                                                             
+     ...                                                                                                                                                                      
+      243    return ' No available slots found.';                                                                                                                             
+      244  }                                                                                                                                                                  
+      245                                                                                                                                                                     
+      349 -/**                                                                                                                                                                
+      350 - * Convert a date-time to absolute minutes from a reference point                                                                                                  
+      351 - * This allows comparing times across different dates                                                                                                              
+      352 - */                                                                                                                                                                
+      246  function dateTimeToAbsoluteMinutes(date: string, time: string): number {                                                                                           
+      247    const d = new Date(date);                                                                                                                                        
+      355 -  // Days since epoch as base, plus minutes within the day                                                                                                         
+      248    const daysSinceEpoch = Math.floor(d.getTime() / (24 * 60 * 60 * 1000));                                                                                          
+      249    return daysSinceEpoch * 24 * 60 + timeToMinutes(time);                                                                                                           
+      250  }                                                                                                                                                                  
+      251                                                                                                                                                                     
+      360 -/**                                                                                                                                                                
+      361 - * Check if two reservations overlap in time                                                                                                                       
+      362 - *                                                                                                                                                                 
+      363 - * Handles all cases:                                                                                                                                              
+      364 - * - Same-day bookings with flexible durations                                                                                                                     
+      365 - * - Same-day vs midnight-spanning bookings                                                                                                                        
+      366 - * - Midnight-spanning vs midnight-spanning bookings                                                                                                               
+      367 - *                                                                                                                                                                 
+      368 - * Two reservations overlap if their time ranges intersect on any date.                                                                                            
+      369 - */                                                                                                                                                                
+      252  function doReservationsOverlap(                                                                                                                                    
+      253    res1StartDate: string,                                                                                                                                           
+      254    res1EndDate: string,                                                                                                                                             
+     ...                                                                                                                                                                      
+      259    res2StartTime: string,                                                                                                                                           
+      260    res2EndTime: string                                                                                                                                              
+      261  ): boolean {                                                                                                                                                       
+      380 -  // Convert to absolute minutes for comparison                                                                                                                    
+      262    const res1Start = dateTimeToAbsoluteMinutes(res1StartDate, res1StartTime);                                                                                       
+      263    const res1End = dateTimeToAbsoluteMinutes(res1EndDate, res1EndTime);                                                                                             
+      264    const res2Start = dateTimeToAbsoluteMinutes(res2StartDate, res2StartTime);                                                                                       
+      265    const res2End = dateTimeToAbsoluteMinutes(res2EndDate, res2EndTime);                                                                                             
+      266                                                                                                                                                                     
+      386 -  // Two intervals overlap if: start1 < end2 AND end1 > start2                                                                                                     
+      267    return res1Start < res2End && res1End > res2Start;                                                                                                               
+      268  }                                                                                                                                                                  
+      269                                                                                                                                                                     
+      390 -                                                                                                                                                                   
+      391 -/**                                                                                                                                                                
+      392 - * Calculate booking duration in minutes                                                                                                                           
+      393 - * Handles both same-day and midnight-spanning bookings                                                                                                            
+      394 - */                                                                                                                                                                
+      270  function calculateDurationMinutes(startTime: string, endTime: string): number {                                                                                    
+      271    const startMinutes = timeToMinutes(startTime);                                                                                                                   
+      272    const endMinutes = timeToMinutes(endTime);                                                                                                                       
+      273                                                                                                                                                                     
+      274    if (endMinutes > startMinutes) {                                                                                                                                 
+      400 -    // Same-day booking (e.g., 09:00 to 17:00)                                                                                                                     
+      275      return endMinutes - startMinutes;                                                                                                                              
+      276    } else {                                                                                                                                                         
+      403 -    // Midnight-spanning booking (e.g., 23:00 to 02:00)                                                                                                            
+      277      return (24 * 60 - startMinutes) + endMinutes;                                                                                                                  
+      278    }                                                                                                                                                                
+      279  }                                                                                                                                                                  
+      280                                                                                                                                                                     
+      408 -/**                                                                                                                                                                
+      409 - * Create a new reservation                                                                                                                                        
+      410 - * ------------------------                                                                                                                                        
+      411 - * Business Rules:                                                                                                                                                 
+      412 - * 1. Time slot must be in the future                                                                                                                              
+      413 - * 2. Room must exist                                                                                                                                              
+      414 - * 3. User must exist                                                                                                                                              
+      415 - * 4. No overlapping reservations (with special handling for same user)                                                                                            
+      416 - *                                                                                                                                                                 
+      417 - * Supports:                                                                                                                                                       
+      418 - * - Flexible booking durations (not just 1-hour slots)                                                                                                            
+      419 - * - Midnight-spanning bookings (e.g., 23:00-02:00)                                                                                                                
+      420 - *                                                                                                                                                                 
+      421 - * If the same user has an overlapping reservation, we UPDATE it.                                                                                                  
+      422 - * If a different user has an overlapping reservation, we throw ConflictError.                                                                                     
+      423 - */                                                                                                                                                                
+      281  export async function createNewReservation(                                                                                                                        
+      282    data: CreateReservationRequest,                                                                                                                                  
+      283    userId: string                                                                                                                                                   
+      284  ): Promise<CreateReservationResult> {                                                                                                                              
+      285    const { roomId, startDate, startTime, endTime } = data;                                                                                                          
+      286                                                                                                                                                                     
+      430 -  // Calculate endDate (next day if booking spans midnight)                                                                                                        
+      287    const endDate = calculateEndDate(startDate, startTime, endTime);                                                                                                 
+      288    const durationMinutes = calculateDurationMinutes(startTime, endTime);                                                                                            
+      289                                                                                                                                                                     
+     ...                                                                                                                                                                      
+      297      userId,                                                                                                                                                        
+      298    });                                                                                                                                                              
+      299                                                                                                                                                                     
+      444 -  // Validate: Time slot must be in the future                                                                                                                     
+      300    if (isTimeSlotInPast(startDate, startTime)) {                                                                                                                    
+      301      throw new ValidationError(                                                                                                                                     
+      302        'Cannot create a reservation in the past. Please select a future date and time.'                                                                             
+      303      );                                                                                                                                                             
+      304    }                                                                                                                                                                
+      305                                                                                                                                                                     
+      451 -  // Validate: Room must exist                                                                                                                                     
+      306    const room = findRoomById(roomId);                                                                                                                               
+      307    if (!room) {                                                                                                                                                     
+      308      throw new NotFoundError(                                                                                                                                       
+     ...                                                                                                                                                                      
+      310      );                                                                                                                                                             
+      311    }                                                                                                                                                                
+      312                                                                                                                                                                     
+      459 -  // Validate: User must exist (they're authenticated, but double-check)                                                                                           
+      313    if (!userExists(userId)) {                                                                                                                                       
+      314      throw new NotFoundError('User not found');                                                                                                                     
+      315    }                                                                                                                                                                
+      316                                                                                                                                                                     
+      464 -  // Check for conflicting reservations                                                                                                                            
+      465 -  // Get all reservations that overlap with the date range of this booking                                                                                         
+      317    const existingReservations = findReservationsByRoomAndDateRange(roomId, startDate, endDate);                                                                     
+      318    const conflictingReservation = existingReservations.find((res) =>                                                                                                
+      319      doReservationsOverlap(                                                                                                                                         
+     ...                                                                                                                                                                      
+      329    );                                                                                                                                                               
+      330                                                                                                                                                                     
+      331    if (conflictingReservation) {                                                                                                                                    
+      481 -    // Get the owner of the conflicting reservation                                                                                                                
+      332      const conflictOwner = findUserById(conflictingReservation.userId);                                                                                             
+      333      const ownerName = conflictOwner?.name || 'Unknown User';                                                                                                       
+      334                                                                                                                                                                     
+      335      if (conflictingReservation.userId === userId) {                                                                                                                
+      486 -      // Same user - UPDATE the existing reservation                                                                                                               
+      336        logger.info('Updating existing reservation for same user', {                                                                                                 
+      337          reservationId: conflictingReservation.reservationId,                                                                                                       
+      338          oldTime: `${conflictingReservation.startTime}-${conflictingReservation.endTime}`,                                                                          
+     ...                                                                                                                                                                      
+      355          wasUpdated: true,                                                                                                                                          
+      356        };                                                                                                                                                           
+      357      } else {                                                                                                                                                       
+      509 -      // Different user - find available alternatives and throw conflict error                                                                                     
+      358        const attemptedStartMinutes = timeToMinutes(startTime);                                                                                                      
+      359        const { before, after } = findNearestAvailableSlots(                                                                                                         
+      360          roomId,                                                                                                                                                    
+     ...                                                                                                                                                                      
+      364        );                                                                                                                                                           
+      365        const suggestionMessage = buildSuggestionMessage(before, after);                                                                                             
+      366                                                                                                                                                                     
+      519 -      // Format conflict message with date range for midnight-spanning                                                                                             
+      367        const dateInfo = conflictingReservation.startDate === conflictingReservation.endDate                                                                         
+      368          ? `on ${conflictingReservation.startDate}`                                                                                                                 
+      369          : `from ${conflictingReservation.startDate} to ${conflictingReservation.endDate}`;                                                                         
+     ...                                                                                                                                                                      
+      385      }                                                                                                                                                              
+      386    }                                                                                                                                                                
+      387                                                                                                                                                                     
+      541 -  // No conflicts - create new reservation                                                                                                                         
+      388    const newReservation = createReservation({                                                                                                                       
+      389      roomId,                                                                                                                                                        
+      390      userId,                                                                                                                                                        
+     ...                                                                                                                                                                      
+      408    };                                                                                                                                                               
+      409  }                                                                                                                                                                  
+      410                                                                                                                                                                     
+      565 -/**                                                                                                                                                                
+      566 - * Delete a reservation                                                                                                                                            
+      567 - * --------------------                                                                                                                                            
+      568 - * Business Rules:                                                                                                                                                 
+      569 - * 1. Reservation must exist                                                                                                                                       
+      570 - * 2. User must own the reservation                                                                                                                                
+      571 - */                                                                                                                                                                
+      411  export async function cancelReservation(                                                                                                                           
+      412    reservationId: string,                                                                                                                                           
+      413    userId: string                                                                                                                                                   
+      414  ): Promise<void> {                                                                                                                                                 
+      415    logger.debug('Attempting to delete reservation', { reservationId, userId });                                                                                     
+      416                                                                                                                                                                     
+      578 -  // Find the reservation                                                                                                                                          
+      417    const reservation = findReservationById(reservationId);                                                                                                          
+      418                                                                                                                                                                     
+      419    if (!reservation) {                                                                                                                                              
+     ...                                                                                                                                                                      
+      422      );                                                                                                                                                             
+      423    }                                                                                                                                                                
+      424                                                                                                                                                                     
+      587 -  // Check ownership                                                                                                                                               
+      425    if (reservation.userId !== userId) {                                                                                                                             
+      426      const owner = findUserById(reservation.userId);                                                                                                                
+      427      throw new ForbiddenError(                                                                                                                                      
+     ...                                                                                                                                                                      
+      429      );                                                                                                                                                             
+      430    }                                                                                                                                                                
+      431                                                                                                                                                                     
+      595 -  // Delete the reservation                                                                                                                                        
+      432    const deleted = deleteReservation(reservationId);                                                                                                                
+      433                                                                                                                                                                     
+      434    if (!deleted) {                                                                                                                                                  
+     ...                                                                                                                                                                      
+      438    logger.info('Reservation cancelled', { reservationId, userId });                                                                                                 
+      439  }                                                                                                                                                                  
+      440                                                                                                                                                                     
+      605 -/**                                                                                                                                                                
+      606 - * Get all reservations for a room                                                                                                                                 
+      607 - * -------------------------------                                                                                                                                 
+      608 - * Business Rules:                                                                                                                                                 
+      609 - * 1. Room must exist                                                                                                                                              
+      610 - */                                                                                                                                                                
+      441  export async function getRoomReservations(                                                                                                                         
+      442    roomId: string                                                                                                                                                   
+      443  ): Promise<Reservation[]> {                                                                                                                                        
+      444    logger.debug('Getting reservations for room', { roomId });                                                                                                       
+      445                                                                                                                                                                     
+      616 -  // Validate: Room must exist                                                                                                                                     
+      446    if (!roomExists(roomId)) {                                                                                                                                       
+      447      const rooms = ['room-1', 'room-2', 'room-3'];                                                                                                                  
+      448      throw new NotFoundError(                                                                                                                                       
+     ...                                                                                                                                                                      
+      460    return reservations;                                                                                                                                             
+      461  }                                                                                                                                                                  
+      462                                                                                                                                                                     
+      634 -/**                                                                                                                                                                
+      635 - * Get a single reservation by ID                                                                                                                                  
+      636 - * ------------------------------                                                                                                                                  
+      637 - * Useful for fetching reservation details.                                                                                                                        
+      638 - */                                                                                                                                                                
+      463  export async function getReservation(                                                                                                                              
+      464    reservationId: string                                                                                                                                            
+      465  ): Promise<Reservation> {                                                                                                                                          
+                                                                                                                                                                              
+⏺ Now let me clean up the test files.                                                                                                                                         
+                                                                                                                                                                              
+⏺ Write(tests/setup.ts)                                                                                                                                                       
+  ⎿  Removed 21 lines                                                                                                                                                         
+       1 -/**                                                                                                                                                                 
+       2 - * Jest Test Setup                                                                                                                                                  
+       3 - * ----------------                                                                                                                                                 
+       4 - * This file runs before each test file.                                                                                                                            
+       5 - * It sets up the test environment and provides utilities.                                                                                                          
+       6 - */                                                                                                                                                                 
+       7 -                                                                                                                                                                    
+       8 -// Set test environment                                                                                                                                             
+       1  process.env.NODE_ENV = 'test';                                                                                                                                      
+       2  process.env.JWT_SECRET = 'test-secret-key';                                                                                                                         
+       3  process.env.JWT_EXPIRES_IN = '3600';                                                                                                                                
+       4                                                                                                                                                                      
+      13 -// Import reset functions                                                                                                                                           
+       5  import { resetRooms } from '../models/room';                                                                                                                        
+       6  import { resetUsers } from '../models/user';                                                                                                                        
+       7  import { resetReservations } from '../models/reservation';                                                                                                          
+       8                                                                                                                                                                      
+      18 -/**                                                                                                                                                                 
+      19 - * Reset all data before each test                                                                                                                                  
+      20 - * --------------------------------                                                                                                                                 
+      21 - * This ensures each test starts with a clean slate.                                                                                                                
+      22 - */                                                                                                                                                                 
+       9  beforeEach(() => {                                                                                                                                                  
+      10    resetRooms();                                                                                                                                                     
+      11    resetUsers();                                                                                                                                                     
+      12    resetReservations();                                                                                                                                              
+      13  });                                                                                                                                                                 
+      28 -                                                                                                                                                                    
+      29 -/**                                                                                                                                                                 
+      30 - * TypeScript Concept: Jest Types                                                                                                                                   
+      31 - * ------------------------------                                                                                                                                   
+      32 - * @types/jest provides types for describe, it, expect, beforeEach, etc.                                                                                            
+      33 - * These are globally available in test files without importing.                                                                                                    
+      34 - */                                                                                                                                                                 
+                                                                                                                                                                              
+⏺ Write(tests/reservations.test.ts)                                                                                                                                           
+  ⎿  Added 6 lines, removed 75 lines                                                                                                                                          
+       2  import { createApp } from '../app';                                                                                                                                 
+       3  import { Express } from 'express';                                                                                                                                  
+       4                                                                                                                                                                      
+       5 -/**                                                                                                                                                                 
+       6 - * TypeScript + Jest Testing                                                                                                                                        
+       7 - * -------------------------                                                                                                                                        
+       8 - * Supertest allows us to test Express apps without starting a real server.                                                                                         
+       9 - * We import the app factory, create a fresh instance for each test suite,                                                                                          
+      10 - * and make HTTP requests against it.                                                                                                                               
+      11 - *                                                                                                                                                                  
+      12 - * TypeScript Concept: Test Types                                                                                                                                   
+      13 - * ------------------------------                                                                                                                                   
+      14 - * @types/jest and @types/supertest provide types for test utilities.                                                                                               
+      15 - * The 'describe', 'it', 'expect', 'beforeAll', etc. are globally available.                                                                                        
+      16 - */                                                                                                                                                                 
+      17 -                                                                                                                                                                    
+       5  let app: Express;                                                                                                                                                   
+       6                                                                                                                                                                      
+      20 -// Create fresh app instance before all tests                                                                                                                       
+       7  beforeAll(() => {                                                                                                                                                   
+       8    app = createApp();                                                                                                                                                
+       9  });                                                                                                                                                                 
+      10                                                                                                                                                                      
+      25 -/**                                                                                                                                                                 
+      26 - * Helper function to login and get a token                                                                                                                         
+      27 - * ----------------------------------------                                                                                                                         
+      28 - * Many tests need authentication, so this helper streamlines the process.                                                                                          
+      29 - */                                                                                                                                                                 
+      11  async function getAuthToken(                                                                                                                                        
+      12    username: string = 'alice',                                                                                                                                       
+      13    password: string = 'SecurePass123!'                                                                                                                               
+     ...                                                                                                                                                                      
+      19    return response.body.data.token as string;                                                                                                                        
+      20  }                                                                                                                                                                   
+      21                                                                                                                                                                      
+      41 -// ==============================================                                                                                                                   
+      42 -// AUTHENTICATION TESTS                                                                                                                                             
+      43 -// ==============================================                                                                                                                   
+      44 -                                                                                                                                                                    
+      22  describe('Authentication - POST /api/login', () => {                                                                                                                
+      23    describe('Successful Login', () => {                                                                                                                              
+      24      it('should return 200 and JWT token for valid credentials (Alice)', async () => {                                                                               
+     ...                                                                                                                                                                      
+      151    });                                                                                                                                                              
+      152  });                                                                                                                                                                
+      153                                                                                                                                                                     
+      177 -// ==============================================                                                                                                                  
+      178 -// RESERVATION CREATION TESTS                                                                                                                                      
+      179 -// ==============================================                                                                                                                  
+      180 -                                                                                                                                                                   
+      154  describe('Create Reservation - POST /api/reservations', () => {                                                                                                    
+      155    describe('Successful Creation', () => {                                                                                                                          
+      156      it('should return 201 for valid reservation', async () => {                                                                                                    
+     ...                                                                                                                                                                      
+      250        expect(response.status).toBe(201);                                                                                                                           
+      251        expect(response.body.data).toMatchObject({                                                                                                                   
+      252          startDate: '2026-06-18',                                                                                                                                   
+      280 -        endDate: '2026-06-19', // Next day because it spans midnight                                                                                               
+      253 +        endDate: '2026-06-19',                                                                                                                                     
+      254          startTime: '23:00',                                                                                                                                        
+      255          endTime: '02:00',                                                                                                                                          
+      256        });                                                                                                                                                          
+     ...                                                                                                                                                                      
+      302          .send({                                                                                                                                                    
+      303            roomId: 'room-1',                                                                                                                                        
+      304            startDate: '2026-06-15',                                                                                                                                 
+      332 -          startTime: '9:00', // Should be 09:00                                                                                                                    
+      305 +          startTime: '9:00',                                                                                                                                       
+      306            endTime: '10:00',                                                                                                                                        
+      307          });                                                                                                                                                        
+      308                                                                                                                                                                     
+     ...                                                                                                                                                                      
+      318          .set('Authorization', `Bearer ${token}`)                                                                                                                   
+      319          .send({                                                                                                                                                    
+      320            roomId: 'room-1',                                                                                                                                        
+      348 -          startDate: '06-15-2026', // Wrong format                                                                                                                 
+      321 +          startDate: '06-15-2026',                                                                                                                                 
+      322            startTime: '10:00',                                                                                                                                      
+      323            endTime: '11:00',                                                                                                                                        
+      324          });                                                                                                                                                        
+     ...                                                                                                                                                                      
+      336          .send({                                                                                                                                                    
+      337            roomId: 'room-1',                                                                                                                                        
+      338            startDate: '2026-06-15',                                                                                                                                 
+      366 -          // Missing startTime and endTime                                                                                                                         
+      339          });                                                                                                                                                        
+      340                                                                                                                                                                     
+      341        expect(response.status).toBe(400);                                                                                                                           
+     ...                                                                                                                                                                      
+      352            roomId: 'room-1',                                                                                                                                        
+      353            startDate: '2026-06-15',                                                                                                                                 
+      354            startTime: '10:00',                                                                                                                                      
+      383 -          endTime: '10:15', // Only 15 minutes                                                                                                                     
+      355 +          endTime: '10:15',                                                                                                                                        
+      356          });                                                                                                                                                        
+      357                                                                                                                                                                     
+      358        expect(response.status).toBe(400);                                                                                                                           
+     ...                                                                                                                                                                      
+      369            roomId: 'room-1',                                                                                                                                        
+      370            startDate: '2026-06-15',                                                                                                                                 
+      371            startTime: '08:00',                                                                                                                                      
+      400 -          endTime: '21:00', // 13 hours                                                                                                                            
+      372 +          endTime: '21:00',                                                                                                                                        
+      373          });                                                                                                                                                        
+      374                                                                                                                                                                     
+      375        expect(response.status).toBe(400);                                                                                                                           
+     ...                                                                                                                                                                      
+      403            roomId: 'room-1',                                                                                                                                        
+      404            startDate: '2026-06-15',                                                                                                                                 
+      405            startTime: '10:00',                                                                                                                                      
+      434 -          endTime: '09:00', // 23 hours (spans midnight)                                                                                                           
+      406 +          endTime: '09:00',                                                                                                                                        
+      407          });                                                                                                                                                        
+      408                                                                                                                                                                     
+      409        expect(response.status).toBe(400);                                                                                                                           
+     ...                                                                                                                                                                      
+      435        const aliceToken = await getAuthToken('alice', 'SecurePass123!');                                                                                            
+      436        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      437                                                                                                                                                                     
+      466 -      // Alice books a slot                                                                                                                                        
+      438        await request(app)                                                                                                                                           
+      439          .post('/api/reservations')                                                                                                                                 
+      440          .set('Authorization', `Bearer ${aliceToken}`)                                                                                                              
+     ...                                                                                                                                                                      
+      445            endTime: '11:00',                                                                                                                                        
+      446          });                                                                                                                                                        
+      447                                                                                                                                                                     
+      477 -      // Bob tries to book the same slot                                                                                                                           
+      448        const response = await request(app)                                                                                                                          
+      449          .post('/api/reservations')                                                                                                                                 
+      450          .set('Authorization', `Bearer ${bobToken}`)                                                                                                                
+     ...                                                                                                                                                                      
+      465        const aliceToken = await getAuthToken('alice', 'SecurePass123!');                                                                                            
+      466        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      467                                                                                                                                                                     
+      498 -      // Alice books 10:00-12:00                                                                                                                                   
+      468        await request(app)                                                                                                                                           
+      469          .post('/api/reservations')                                                                                                                                 
+      470          .set('Authorization', `Bearer ${aliceToken}`)                                                                                                              
+     ...                                                                                                                                                                      
+      475            endTime: '12:00',                                                                                                                                        
+      476          });                                                                                                                                                        
+      477                                                                                                                                                                     
+      509 -      // Bob tries to book 11:00-13:00 (overlaps with Alice's booking)                                                                                             
+      478        const response = await request(app)                                                                                                                          
+      479          .post('/api/reservations')                                                                                                                                 
+      480          .set('Authorization', `Bearer ${bobToken}`)                                                                                                                
+     ...                                                                                                                                                                      
+      493        const aliceToken = await getAuthToken('alice', 'SecurePass123!');                                                                                            
+      494        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      495                                                                                                                                                                     
+      528 -      // Alice books 09:00-17:00 (full day)                                                                                                                        
+      496        await request(app)                                                                                                                                           
+      497          .post('/api/reservations')                                                                                                                                 
+      498          .set('Authorization', `Bearer ${aliceToken}`)                                                                                                              
+     ...                                                                                                                                                                      
+      503            endTime: '17:00',                                                                                                                                        
+      504          });                                                                                                                                                        
+      505                                                                                                                                                                     
+      539 -      // Bob tries to book 12:00-13:00 (within Alice's booking)                                                                                                    
+      506        const response = await request(app)                                                                                                                          
+      507          .post('/api/reservations')                                                                                                                                 
+      508          .set('Authorization', `Bearer ${bobToken}`)                                                                                                                
+     ...                                                                                                                                                                      
+      519      it('should return 200 (update) when same user books overlapping slot', async () => {                                                                           
+      520        const token = await getAuthToken();                                                                                                                          
+      521                                                                                                                                                                     
+      556 -      // Alice books a slot                                                                                                                                        
+      522        const first = await request(app)                                                                                                                             
+      523          .post('/api/reservations')                                                                                                                                 
+      524          .set('Authorization', `Bearer ${token}`)                                                                                                                   
+     ...                                                                                                                                                                      
+      532        expect(first.status).toBe(201);                                                                                                                              
+      533        const reservationId = first.body.data.reservationId;                                                                                                         
+      534                                                                                                                                                                     
+      570 -      // Alice books the same slot again (should update)                                                                                                           
+      535        const response = await request(app)                                                                                                                          
+      536          .post('/api/reservations')                                                                                                                                 
+      537          .set('Authorization', `Bearer ${token}`)                                                                                                                   
+     ...                                                                                                                                                                      
+      544                                                                                                                                                                     
+      545        expect(response.status).toBe(200);                                                                                                                           
+      546        expect(response.body.message).toContain('updated');                                                                                                          
+      583 -      // Should keep the same reservation ID                                                                                                                       
+      547        expect(response.body.data.reservationId).toBe(reservationId);                                                                                                
+      548      });                                                                                                                                                            
+      549                                                                                                                                                                     
+      550      it('should detect conflict with seed data (Bob tries Alice time)', async () => {                                                                               
+      551        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      552                                                                                                                                                                     
+      590 -      // Seed data: res-1 is Alice's reservation for room-1, 2026-06-02, 09:00-10:30                                                                               
+      553        const response = await request(app)                                                                                                                          
+      554          .post('/api/reservations')                                                                                                                                 
+      555          .set('Authorization', `Bearer ${bobToken}`)                                                                                                                
+     ...                                                                                                                                                                      
+      568        const aliceToken = await getAuthToken('alice', 'SecurePass123!');                                                                                            
+      569        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      570                                                                                                                                                                     
+      609 -      // Alice books 10:00-11:00                                                                                                                                   
+      571        await request(app)                                                                                                                                           
+      572          .post('/api/reservations')                                                                                                                                 
+      573          .set('Authorization', `Bearer ${aliceToken}`)                                                                                                              
+     ...                                                                                                                                                                      
+      578            endTime: '11:00',                                                                                                                                        
+      579          });                                                                                                                                                        
+      580                                                                                                                                                                     
+      620 -      // Bob tries to book the same slot - should get suggestions                                                                                                  
+      581        const response = await request(app)                                                                                                                          
+      582          .post('/api/reservations')                                                                                                                                 
+      583          .set('Authorization', `Bearer ${bobToken}`)                                                                                                                
+     ...                                                                                                                                                                      
+      596        const aliceToken = await getAuthToken('alice', 'SecurePass123!');                                                                                            
+      597        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      598                                                                                                                                                                     
+      639 -      // Alice books midnight-spanning: 23:00 on June 26 to 02:00 on June 27                                                                                       
+      599        await request(app)                                                                                                                                           
+      600          .post('/api/reservations')                                                                                                                                 
+      601          .set('Authorization', `Bearer ${aliceToken}`)                                                                                                              
+     ...                                                                                                                                                                      
+      606            endTime: '02:00',                                                                                                                                        
+      607          });                                                                                                                                                        
+      608                                                                                                                                                                     
+      650 -      // Bob tries to book 01:00-03:00 on June 27 (overlaps with Alice's end time)                                                                                 
+      609        const response = await request(app)                                                                                                                          
+      610          .post('/api/reservations')                                                                                                                                 
+      611          .set('Authorization', `Bearer ${bobToken}`)                                                                                                                
+     ...                                                                                                                                                                      
+      624        const aliceToken = await getAuthToken('alice', 'SecurePass123!');                                                                                            
+      625        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      626                                                                                                                                                                     
+      669 -      // Alice books 22:00 to 01:00 (spans midnight)                                                                                                               
+      627        await request(app)                                                                                                                                           
+      628          .post('/api/reservations')                                                                                                                                 
+      629          .set('Authorization', `Bearer ${aliceToken}`)                                                                                                              
+     ...                                                                                                                                                                      
+      634            endTime: '01:00',                                                                                                                                        
+      635          });                                                                                                                                                        
+      636                                                                                                                                                                     
+      680 -      // Bob tries to book 23:30 to 02:00 (also spans midnight, overlaps)                                                                                          
+      637        const response = await request(app)                                                                                                                          
+      638          .post('/api/reservations')                                                                                                                                 
+      639          .set('Authorization', `Bearer ${bobToken}`)                                                                                                                
+     ...                                                                                                                                                                      
+      652        const aliceToken = await getAuthToken('alice', 'SecurePass123!');                                                                                            
+      653        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      654                                                                                                                                                                     
+      699 -      // Alice books 10:00-12:00                                                                                                                                   
+      655        await request(app)                                                                                                                                           
+      656          .post('/api/reservations')                                                                                                                                 
+      657          .set('Authorization', `Bearer ${aliceToken}`)                                                                                                              
+     ...                                                                                                                                                                      
+      662            endTime: '12:00',                                                                                                                                        
+      663          });                                                                                                                                                        
+      664                                                                                                                                                                     
+      710 -      // Bob books 12:00-14:00 (immediately after, no overlap)                                                                                                     
+      665        const response = await request(app)                                                                                                                          
+      666          .post('/api/reservations')                                                                                                                                 
+      667          .set('Authorization', `Bearer ${bobToken}`)                                                                                                                
+     ...                                                                                                                                                                      
+      679        const aliceToken = await getAuthToken('alice', 'SecurePass123!');                                                                                            
+      680        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      681                                                                                                                                                                     
+      728 -      // Alice books 23:00 to 02:00 (spans midnight)                                                                                                               
+      682        await request(app)                                                                                                                                           
+      683          .post('/api/reservations')                                                                                                                                 
+      684          .set('Authorization', `Bearer ${aliceToken}`)                                                                                                              
+     ...                                                                                                                                                                      
+      689            endTime: '02:00',                                                                                                                                        
+      690          });                                                                                                                                                        
+      691                                                                                                                                                                     
+      739 -      // Bob books 02:00-04:00 on July 1 (immediately after Alice's ends)                                                                                          
+      692        const response = await request(app)                                                                                                                          
+      693          .post('/api/reservations')                                                                                                                                 
+      694          .set('Authorization', `Bearer ${bobToken}`)                                                                                                                
+     ...                                                                                                                                                                      
+      704    });                                                                                                                                                              
+      705  });                                                                                                                                                                
+      706                                                                                                                                                                     
+      755 -// ==============================================                                                                                                                  
+      756 -// RESERVATION DELETION TESTS                                                                                                                                      
+      757 -// ==============================================                                                                                                                  
+      758 -                                                                                                                                                                   
+      707  describe('Delete Reservation - DELETE /api/reservations/:id', () => {                                                                                              
+      708    describe('Successful Deletion', () => {                                                                                                                          
+      709      it('should return 204 when user deletes own reservation', async () => {                                                                                        
+      710        const token = await getAuthToken();                                                                                                                          
+      711                                                                                                                                                                     
+      764 -      // res-1 belongs to Alice (user-1)                                                                                                                           
+      712        const response = await request(app)                                                                                                                          
+      713          .delete('/api/reservations/res-1')                                                                                                                         
+      714          .set('Authorization', `Bearer ${token}`);                                                                                                                  
+     ...                                                                                                                                                                      
+      719      it('should return 204 when Bob deletes his own reservation', async () => {                                                                                     
+      720        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      721                                                                                                                                                                     
+      775 -      // res-2 belongs to Bob (user-2)                                                                                                                             
+      722        const response = await request(app)                                                                                                                          
+      723          .delete('/api/reservations/res-2')                                                                                                                         
+      724          .set('Authorization', `Bearer ${bobToken}`);                                                                                                               
+     ...                                                                                                                                                                      
+      731      it('should return 403 when user tries to delete another user reservation', async () => {                                                                       
+      732        const bobToken = await getAuthToken('bob', 'BobSecure2026!');                                                                                                
+      733                                                                                                                                                                     
+      788 -      // res-1 belongs to Alice, not Bob                                                                                                                           
+      734        const response = await request(app)                                                                                                                          
+      735          .delete('/api/reservations/res-1')                                                                                                                         
+      736          .set('Authorization', `Bearer ${bobToken}`);                                                                                                               
+     ...                                                                                                                                                                      
+      761    });                                                                                                                                                              
+      762  });                                                                                                                                                                
+      763                                                                                                                                                                     
+      819 -// ==============================================                                                                                                                  
+      820 -// GET RESERVATIONS TESTS                                                                                                                                          
+      821 -// ==============================================                                                                                                                  
+      822 -                                                                                                                                                                   
+      764  describe('Get Room Reservations - GET /api/rooms/:roomId/reservations', () => {                                                                                    
+      765    describe('Successful Retrieval', () => {                                                                                                                         
+      766      it('should return 200 with reservations for valid room', async () => {                                                                                         
+     ...                                                                                                                                                                      
+      773        expect(response.status).toBe(200);                                                                                                                           
+      774        expect(response.body.message).toContain('reservation');                                                                                                      
+      775        expect(Array.isArray(response.body.data)).toBe(true);                                                                                                        
+      835 -      // Seed data has 2 reservations for room-1                                                                                                                   
+      776        expect(response.body.data.length).toBe(2);                                                                                                                   
+      777      });                                                                                                                                                            
+      778                                                                                                                                                                     
+      779      it('should return 200 with empty array for room with no reservations', async () => {                                                                           
+      780        const token = await getAuthToken();                                                                                                                          
+      781                                                                                                                                                                     
+      842 -      // First delete all reservations for room-3                                                                                                                  
+      782        await request(app)                                                                                                                                           
+      783          .delete('/api/reservations/res-5')                                                                                                                         
+      784          .set('Authorization', `Bearer ${token}`);                                                                                                                  
+     ...                                                                                                                                                                      
+      832    });                                                                                                                                                              
+      833  });                                                                                                                                                                
+      834                                                                                                                                                                     
+      896 -// ==============================================                                                                                                                  
+      897 -// HEALTH CHECK TEST                                                                                                                                               
+      898 -// ==============================================                                                                                                                  
+      899 -                                                                                                                                                                   
+      835  describe('Health Check - GET /api/health', () => {                                                                                                                 
+      836    it('should return 200 with healthy status', async () => {                                                                                                        
+      837      const response = await request(app).get('/api/health');                                                                                                        
+     ...                                                                                                                                                                      
+      842    });                                                                                                                                                              
+      843  });                                                                                                                                                                
+      844                                                                                                                                                                     
+      910 -// ==============================================                                                                                                                  
+      911 -// 404 NOT FOUND TEST                                                                                                                                              
+      912 -// ==============================================                                                                                                                  
+      913 -                                                                                                                                                                   
+      845  describe('Not Found Handler', () => {                                                                                                                              
+      846    it('should return 404 for unknown endpoints', async () => {                                                                                                      
+      847      const response = await request(app).get('/api/unknown-endpoint');                                                                                              
+                                                                                                                                                                              
+⏺ All code files have been cleaned up. Let me run the tests to make sure everything still works correctly.                                                                    
+                                                                                                                                                                              
+⏺ Bash(npm test)                                                                                                                                                              
+  ⎿  > meeting-room-reservations@1.0.0 test                                                                                                                                   
+     > jest --verbose --runInBand                                                                                                                                             
+     PASS tests/reservations.test.ts (8.599 s)                                                                                                                                
+     … +79 lines (ctrl+o to expand)                                                                                                                                           
+                                                                                                                                                                              
+⏺ All 48 tests pass. Here's a summary of what was cleaned up:                                                                                                                 
+                                                                                                                                                                              
+  Files cleaned (removed tutorial/educational comments):                                                                                                                      
+  ┌──────────────┬───────────────────────────────────────┐                                                                                                                    
+  │  Directory   │                 Files                 │                                                                                                                    
+  ├──────────────┼───────────────────────────────────────┤                                                                                                                    
+  │ Root         │ index.ts, app.ts                      │                                                                                                                    
+  ├──────────────┼───────────────────────────────────────┤                                                                                                                    
+  │ utils/       │ config.ts, logger.ts, middleware.ts   │                                                                                                                    
+  ├──────────────┼───────────────────────────────────────┤                                                                                                                    
+  │ types/       │ index.ts, express.d.ts                │                                                                                                                    
+  ├──────────────┼───────────────────────────────────────┤                                                                                                                    
+  │ errors/      │ ApiError.ts                           │                                                                                                                    
+  ├──────────────┼───────────────────────────────────────┤                                                                                                                    
+  │ models/      │ room.ts, user.ts, reservation.ts      │                                                                                                                    
+  ├──────────────┼───────────────────────────────────────┤                                                                                                                    
+  │ controllers/ │ login.ts, reservations.ts, rooms.ts   │                                                                                                                    
+  ├──────────────┼───────────────────────────────────────┤                                                                                                                    
+  │ services/    │ authService.ts, reservationService.ts │                                                                                                                    
+  ├──────────────┼───────────────────────────────────────┤                                                                                                                    
+  │ validators/  │ reservationValidator.ts               │                                                                                                                    
+  ├──────────────┼───────────────────────────────────────┤                                                                                                                    
+  │ tests/       │ setup.ts, reservations.test.ts        │                                                                                                                    
+  └──────────────┴───────────────────────────────────────┘                                                                                                                    
+  README.md updates:                                                                                                                                                          
+  1. Added "Production Logger - Winston or Pino for structured logging" to Future Enhancements                                                                                
+  2. Added "Synchronous Password Hashing" to Known Limitations (noting bcrypt.hashSync() should use async initialization in production)                                       
+                                                                                                                                                                              
+  All tutorial-style comments explaining TypeScript concepts like "TypeScript Concept: Interface", "TypeScript Concept: Promise Return Types", etc. have been removed, leaving
+   clean, production-ready code.

@@ -2,19 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { getRoomReservations } from '../services/reservationService';
 import { UnauthorizedError } from '../errors/ApiError';
 
-/**
- * Rooms Controller
- * ----------------
- * Handles room-related HTTP endpoints.
- */
-
-/**
- * Get Room Reservations Handler
- * -----------------------------
- * GET /api/rooms/:roomId/reservations
- *
- * Returns all reservations for a specific room.
- */
 export async function getRoomReservationsController(
   req: Request<{ roomId: string }>,
   res: Response,
