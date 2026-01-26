@@ -1,4 +1,5 @@
 1. Mitä tekoäly teki hyvin?
+
 Seurasi tarkkoja ohjeita. En ole aiemmin käyttänyt Clauden maksullista Claude.codea. Päätin kokeilla sitä yleisen tämän hetkisen teknologia-alan hypen vuoksi. Olin kuullut, että tällä AI:lla hyvää jälkeä aikaiseksi. Aiemmin olin kokeillut GitHub Copilottia ja Chat GPT:tä, mutta tämä työkalu ylitti kaikki odotukseni ja toteutti visioni ottaen huomioon jokaisen yksityiskohdan nivoen ne yhteen yhdeksi kokonaisuudeksi. Se oli täysin uudella tasolla verrattuna aiemmin käyttämiini AI-työkaluihin koodauksessa.
 
 Käytin Clauden normaalia Chattia hioessani promptia ja API:n tech stackia ja päädyin käyttämään monia teknologioita(zod ja TypeScript), joita en aiemmin ollut käyttänyt. Claude.code teki omaan silmääni hyvää työtä näiden teknologioiden yhdistämisessä. Sain mitä halusin. 
@@ -12,6 +13,7 @@ Ajatusten ja ideoiden kääntäminen koodiksi sujuu kuin valssi. En nähnyt syyt
 
 
 2. Mitä tekoäly teki huonosti?
+
 Tekoäly ei ole paras ajattelemaan käytettävyyttä ihmisen kannalta, erityisesti sellaisen, joka ei ymmärrä tietokoneista niin paljoa. Minulla on itselläni koulutusta myös käytettävyyssuunnittelupuolelta, joten nämä yksityiskohdat paistavat omaan silmääni heti, ei välttämättä suoranaisina virheinä, mutta selkeänä parannuskohtana.
 
 Myös tokenrajan vastaan tuleminen pääsi yllättämään. Huomaan, että vaikka jotkut netissä painottavatkin, koodin mahdollisimman nopeasti AI:lla tekemistä, pidemmillä prompteilla saa enemmän tehtyä ja säästettyä resursseja. Git commitit ja muut vastaavat perusoperaatiot kannattaa tehdä suoraan vaan perus terminaalista.

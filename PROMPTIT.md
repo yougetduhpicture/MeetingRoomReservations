@@ -6355,4 +6355,153 @@ I mean that we didn't update create_reservation.rest, delete.reservation.rest, u
 ⏺ All done! The implementation is complete with:                                                                                   
   - All code updated to use startDate/endDate                                                                                      
   - 48 tests passing                                                                                                               
-  - REST client files updated for manual testing                                    
+  - REST client files updated for manual testing        
+
+
+--------------------------------------------------
+UPDATING THE README
+--------------------------------------------------
+
+  You remember the updates we did to this MeetingRoomReservations API? I Noticed the README.md isn't up to date with the latest updates. Would you be a dear and update       
+  that for me?                                                                                                                                                                
+                                                                                                                                                                              
+⏺ Let me read the current README.md and understand what recent changes were made to the API.                                                                                  
+                                                                                                                                                                              
+⏺ Read(README.md)                                                                                                                                                             
+  ⎿  Read 494 lines                                                                                                                                                           
+                                                                                                                                                                              
+⏺ Read(ANALYYSI.md)                                                                                                                                                           
+  ⎿  Read 33 lines                                                                                                                                                            
+                                                                                                                                                                              
+⏺ Let me also look at the current implementation to understand the exact changes.                                                                                             
+                                                                                                                                                                              
+⏺ Read(validators/reservationValidator.ts)                                                                                                                                    
+  ⎿  Read 255 lines                                                                                                                                                           
+                                                                                                                                                                              
+⏺ Read(services/reservationService.ts)                                                                                                                                        
+  ⎿  Read 650 lines                                                                                                                                                           
+                                                                                                                                                                              
+⏺ Now I understand the changes that were made. The key updates are:                                                                                                           
+                                                                                                                                                                              
+  1. Flexible durations: 30 minutes to 12 hours (not just 1-hour slots)                                                                                                       
+  2. Minute precision: Times can be HH:MM (not just on the hour)                                                                                                              
+  3. Midnight-spanning bookings: Reservations can cross midnight                                                                                                              
+  4. Field changed: date → startDate (with automatic endDate calculation)                                                                                                     
+  5. Conflict suggestions: When a booking conflicts, the API suggests nearest available slots                                                                                 
+                                                                                                                                                                              
+  Let me update the README to reflect these changes.                                                                                                                          
+                                                                                                                                                                              
+⏺ Update(README.md)                                                                                                                                                           
+  ⎿  Added 6 lines, removed 5 lines                                                                                                                                           
+      226  ```json                                                                                                                                                            
+      227  {                                                                                                                                                                  
+      228    "roomId": "room-1",                                                                                                                                              
+      229 -  "date": "2026-06-15",                                                                                                                                            
+      229 +  "startDate": "2026-06-15",                                                                                                                                       
+      230    "startTime": "10:00",                                                                                                                                            
+      231 -  "endTime": "11:00"                                                                                                                                               
+      231 +  "endTime": "11:30"                                                                                                                                               
+      232  }                                                                                                                                                                  
+      233  ```                                                                                                                                                                
+      234                                                                                                                                                                     
+      235  **Validation Rules:**                                                                                                                                              
+      236 -- Date must be in the future (YYYY-MM-DD format)                                                                                                                   
+      237 -- Times must be on the hour (HH:00)                                                                                                                                
+      238 -- Duration must be exactly 1 hour                                                                                                                                  
+      236 +- Start date must be in the future (YYYY-MM-DD format)                                                                                                             
+      237 +- Times must be in HH:MM format (24-hour, minute precision)                                                                                                        
+      238 +- Duration must be between 30 minutes and 12 hours                                                                                                                 
+      239 +- Midnight-spanning bookings are supported (e.g., 23:00-02:00)                                                                                                     
+      240  - Room must exist                                                                                                                                                  
+      241                                                                                                                                                                     
+      242  **Success Response (201):**                                                                                                                                        
+                                                                                                                                                                              
+⏺ Update(README.md)                                                                                                                                                           
+  ⎿  Added 3 lines, removed 2 lines                                                                                                                                           
+      247      "reservationId": "abc-123-def",                                                                                                                                
+      248      "roomId": "room-1",                                                                                                                                            
+      249      "userId": "user-1",                                                                                                                                            
+      250 -    "date": "2026-06-15",                                                                                                                                          
+      250 +    "startDate": "2026-06-15",                                                                                                                                     
+      251 +    "endDate": "2026-06-15",                                                                                                                                       
+      252      "startTime": "10:00",                                                                                                                                          
+      252 -    "endTime": "11:00"                                                                                                                                             
+      253 +    "endTime": "11:30"                                                                                                                                             
+      254    }                                                                                                                                                                
+      255  }                                                                                                                                                                  
+      256  ```                                                                                                                                                                
+                                                                                                                                                                              
+⏺ Update(README.md)                                                                                                                                                           
+  ⎿  Added 4 lines, removed 2 lines                                                                                                                                           
+      267  ```                                                                                                                                                                
+      268                                                                                                                                                                     
+      269  **Error Responses:**                                                                                                                                               
+      270 -- `400` - Validation error (invalid format, past date, non-hourly time)                                                                                            
+      270 +- `400` - Validation error (invalid format, past date, duration out of range)                                                                                      
+      271  - `401` - Not authenticated                                                                                                                                        
+      272  - `404` - Room not found                                                                                                                                           
+      273  - `409` - Conflict (slot booked by another user)                                                                                                                   
+      274                                                                                                                                                                     
+      275  **Conflict Response (409):**                                                                                                                                       
+      276 +                                                                                                                                                                   
+      277 +When a conflict occurs, the API suggests alternative available time slots:                                                                                         
+      278  ```json                                                                                                                                                            
+      279  {                                                                                                                                                                  
+      280    "error": "ConflictError",                                                                                                                                        
+      279 -  "message": "Conference Room A is already booked from 10:00-11:00 on 2026-06-15 by Alice Johnson. Please choose a different time slot.",                          
+      281 +  "message": "Conference Room A is already booked from 10:00-11:00 on 2026-06-15 by Alice Johnson. Nearest available slots: 08:30-10:00 (earlier) or 11:00-1       
+          +2:30 (later).",                                                                                                                                                    
+      282    "statusCode": 409                                                                                                                                                
+      283  }                                                                                                                                                                  
+      284  ```                                                                                                                                                                
+                                                                                                                                                                              
+⏺ Update(README.md)                                                                                                                                                           
+⏺                                                                                                                                                                             
+· ⎿h Addeda3ilines,sremovedt2rlines· 46s · ↓ 0 tokens)                                                                                                                        
+      311        "reservationId": "res-1",                                                                                                                                    
+───── 312        "roomId": "room-1",──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      313        "userId": "user-1",                                                                                                                                          
+   ── 314 -      "date": "2026-06-02",                                                                                                                                 ───────
+      314 +      "startDate": "2026-06-02",                                                                                                                                   
+      315 +      "endDate": "2026-06-02",                                                                                                                                     
+      316        "startTime": "09:00",                                                                                                                                        
+      316 -      "endTime": "10:00"                                                                                                                                           
+      317 +      "endTime": "10:30"                                                                                                                                           
+      318      }                                                                                                                                                              
+      319    ]                                                                                                                                                                
+      320  }                                                                                                                                                                  
+                                                                                                                                                                              
+⏺ Update(README.md)                                                                                                                                                           
+  ⎿  Removed 1 line                                                                                                                                                           
+      477  2. **Single Instance** - Not designed for horizontal scaling without a database                                                                                    
+      478  3. **No User Registration** - Only seeded users can authenticate                                                                                                   
+      479  4. **UTC Only** - No timezone handling (all times assumed UTC)                                                                                                     
+      480 -5. **1-Hour Slots Only** - Reservations must be exactly 1 hour                                                                                                     
+      480                                                                                                                                                                     
+      481  ## Scripts Reference                                                                                                                                               
+      482                                                                                                                                                                     
+                                                                                                                                                                              
+⏺ Update(README.md)                                                                                                                                                           
+  ⎿  Added 3 lines, removed 1 line                                                                                                                                            
+       7  This API provides endpoints for:                                                                                                                                    
+       8  - User authentication with JWT tokens                                                                                                                               
+       9  - Creating and managing meeting room reservations                                                                                                                   
+      10 -- Conflict detection and handling for overlapping bookings                                                                                                          
+      10 +- Flexible booking durations (30 minutes to 12 hours) with minute precision                                                                                         
+      11 +- Midnight-spanning bookings (e.g., 23:00-02:00)                                                                                                                    
+      12 +- Conflict detection with intelligent suggestions for available time slots                                                                                          
+      13  - Role-based access control (users can only modify their own reservations)                                                                                          
+      14                                                                                                                                                                      
+      15  ### Key Features                                                                                                                                                    
+                                                                                                                                                                              
+⏺ Done. I've updated the README.md with the following changes:                                                                                                                
+                                                                                                                                                                              
+  1. Project Overview - Added mention of flexible durations, minute precision, midnight-spanning bookings, and conflict suggestions                                           
+  2. POST /api/reservations section:                                                                                                                                          
+    - Changed date field to startDate in request body                                                                                                                         
+    - Updated time example from 10:00/11:00 to 10:00/11:30                                                                                                                    
+    - Updated validation rules: removed "on the hour" and "exactly 1 hour" restrictions, added "30 min to 12 hours" and midnight-spanning support                             
+    - Added startDate and endDate to success response                                                                                                                         
+    - Updated conflict response to show the new suggestion feature                                                                                                            
+  3. GET /api/rooms/:roomId/reservations - Updated response to show startDate/endDate fields                                                                                  
+  4. Known Limitations - Removed the "1-Hour Slots Only" limitation since it no longer applies                            

@@ -7,7 +7,9 @@ A production-ready TypeScript + Express REST API for managing meeting room reser
 This API provides endpoints for:
 - User authentication with JWT tokens
 - Creating and managing meeting room reservations
-- Conflict detection and handling for overlapping bookings
+- Flexible booking durations (30 minutes to 12 hours) with minute precision
+- Midnight-spanning bookings (e.g., 23:00-02:00)
+- Conflict detection with intelligent suggestions for available time slots
 - Role-based access control (users can only modify their own reservations)
 
 ### Key Features
@@ -226,16 +228,17 @@ Create a new reservation. Requires authentication.
 ```json
 {
   "roomId": "room-1",
-  "date": "2026-06-15",
+  "startDate": "2026-06-15",
   "startTime": "10:00",
-  "endTime": "11:00"
+  "endTime": "11:30"
 }
 ```
 
 **Validation Rules:**
-- Date must be in the future (YYYY-MM-DD format)
-- Times must be on the hour (HH:00)
-- Duration must be exactly 1 hour
+- Start date must be in the future (YYYY-MM-DD format)
+- Times must be in HH:MM format (24-hour, minute precision)
+- Duration must be between 30 minutes and 12 hours
+- Midnight-spanning bookings are supported (e.g., 23:00-02:00)
 - Room must exist
 
 **Success Response (201):**
@@ -246,9 +249,10 @@ Create a new reservation. Requires authentication.
     "reservationId": "abc-123-def",
     "roomId": "room-1",
     "userId": "user-1",
-    "date": "2026-06-15",
+    "startDate": "2026-06-15",
+    "endDate": "2026-06-15",
     "startTime": "10:00",
-    "endTime": "11:00"
+    "endTime": "11:30"
   }
 }
 ```
@@ -265,16 +269,18 @@ If you try to book a slot that overlaps with your own existing reservation, the 
 ```
 
 **Error Responses:**
-- `400` - Validation error (invalid format, past date, non-hourly time)
+- `400` - Validation error (invalid format, past date, duration out of range)
 - `401` - Not authenticated
 - `404` - Room not found
 - `409` - Conflict (slot booked by another user)
 
 **Conflict Response (409):**
+
+When a conflict occurs, the API suggests alternative available time slots:
 ```json
 {
   "error": "ConflictError",
-  "message": "Conference Room A is already booked from 10:00-11:00 on 2026-06-15 by Alice Johnson. Please choose a different time slot.",
+  "message": "Conference Room A is already booked from 10:00-11:00 on 2026-06-15 by Alice Johnson. Nearest available slots: 08:30-10:00 (earlier) or 11:00-12:30 (later).",
   "statusCode": 409
 }
 ```
@@ -307,9 +313,10 @@ Get all reservations for a specific room.
       "reservationId": "res-1",
       "roomId": "room-1",
       "userId": "user-1",
-      "date": "2026-06-02",
+      "startDate": "2026-06-02",
+      "endDate": "2026-06-02",
       "startTime": "09:00",
-      "endTime": "10:00"
+      "endTime": "10:30"
     }
   ]
 }
@@ -472,7 +479,6 @@ The project uses TypeScript's strict mode with additional checks:
 2. **Single Instance** - Not designed for horizontal scaling without a database
 3. **No User Registration** - Only seeded users can authenticate
 4. **UTC Only** - No timezone handling (all times assumed UTC)
-5. **1-Hour Slots Only** - Reservations must be exactly 1 hour
 
 ## Scripts Reference
 
