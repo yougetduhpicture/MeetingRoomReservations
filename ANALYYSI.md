@@ -1,4 +1,4 @@
-1. Mitä tekoäly teki hyvin?
+## 1. Mitä tekoäly teki hyvin?
 
 Seurasi tarkkoja ohjeita. En ole aiemmin käyttänyt Clauden maksullista Claude.codea. Päätin kokeilla sitä yleisen tämän hetkisen teknologia-alan hypen vuoksi. Olin kuullut, että tällä AI:lla hyvää jälkeä aikaiseksi. Aiemmin olin kokeillut GitHub Copilottia ja Chat GPT:tä, mutta tämä työkalu ylitti kaikki odotukseni ja toteutti visioni ottaen huomioon jokaisen yksityiskohdan nivoen ne yhteen yhdeksi kokonaisuudeksi. Se oli täysin uudella tasolla verrattuna aiemmin käyttämiini AI-työkaluihin koodauksessa.
 
@@ -8,15 +8,15 @@ Pyysin myös sitä tuottamaan selkeää ja luettavaa koodia, joka myös onnistui
 
 Huomautin sitä myös, että tästä tulee ensimmäinen TypeScript projektini. Olen aiemmin käyttänyt JavaScriptiä ja Reactia, mutta päätin haastaa itseni sillä TS lienee nykyään enemmän standardi tietoturvasyistä ja tarkoitukseni on ottaa se haltuun. Tekoäly päätti selittää minulle auki tiedostoissa joitakin olennaisia TS konsepteja, mikä auttoi jonkin verran. Onneksi olin katsonut joitakin videoita TypeScriptin peruskonsepteista, sillä tekoäly meinasi aluksi tehdä projektin laatimatta interfaceja. Laitoin tekoälyn kanssa interfacet kuntoon jo ensimmäiseen promptiin, joten niidenkään kanssa ei lopulta tullut ongelmaa.
 
-Ajatusten ja ideoiden kääntäminen koodiksi sujuu kuin valssi. En nähnyt syytä kirjoittaa koodia itse. 
+Ajatusten ja ideoiden kääntäminen koodiksi sujuu kuin valssi. En nähnyt syytä kirjoittaa koodia itse PROMPTIT.md tiedostoa lukuun ottamatta, jonka päädyin formatoimaan manuaalisesti suuren kokonsa vuoksi. 
 
 
 
-2. Mitä tekoäly teki huonosti?
+## 2. Mitä tekoäly teki huonosti?
 
 Tekoäly ei ole paras ajattelemaan käytettävyyttä ihmisen kannalta, erityisesti sellaisen, joka ei ymmärrä tietokoneista niin paljoa. Minulla on itselläni koulutusta myös käytettävyyssuunnittelupuolelta, joten nämä yksityiskohdat paistavat omaan silmääni heti, ei välttämättä suoranaisina virheinä, mutta selkeänä parannuskohtana.
 
-Myös token-rajan vastaan tuleminen pääsi yllättämään. Huomaan, että vaikka jotkut netissä painottavatkin, koodin mahdollisimman nopeasti AI:lla tekemistä, pidemmillä prompteilla saa enemmän tehtyä ja säästettyä resursseja. Git commitit ja muut vastaavat perusoperaatiot kannattaa tehdä suoraan vaan perus terminaalista.
+Myös token-rajan vastaan tuleminen pääsi yllättämään. Huomaan, että vaikka jotkut netissä painottavatkin, koodin mahdollisimman nopeasti AI:lla tekemistä, pidemmillä prompteilla saa enemmän tehtyä ja säästettyä resursseja. Git commitit ja muut vastaavat perusoperaatiot kannattaa tehdä suoraan vaan perusterminaalista. Myöhemmin opin ystävältäni, joka työskentelee ohjelmoijana ja käyttää tekoälyä koodauksessa, että ensimmäiseen promptiin kannattaa jo kirjoittaa, että muutosten jälkeen tekee pull requestin GitHub Repositorioon. Tällöin myös Claude.code näkyy kuulemma GitHubissa Collaboratorina, mikä olisi lisännyt projektiin ammattimaisemman kosketuksen. Käytännön tasolla koodin osalta uskon, että lopputulos on aikalailla sama.
 
 Tekoäly ei aina ymmärtänyt mikä on käytännön näkökulmasta järkevää. Esim. 1min minimivarausrajan pyysin muuttamaan 30min rajaksi. Yhden minuutin varaukset järjestelmässä, jota käyttää useampi eri käyttäjä minuutin varaukset tekisivät ainoastaan hallaa muille käyttäjille, eikä kukaan tekisi sellaista tahallaan. Hyvä suunnittelu estää virhekäyttöä ja tukee käyttöä, joka on tarkoituksen mukaista.
 
@@ -24,8 +24,10 @@ Jouduin jossain vaiheessa myös huomauttamaan rest client pyyntöjen päivitykse
 
 Huomasin myös käydessäni lopussa tiedostoja läpi ja poistaessani itselleni takoitettuja TypeScriptin opetuskommentteja, että AI ei ollut laittanut kaikkia kommentteihin kirjoittamiaan parannus ehdotuksia README.md:hen ja pyysin sitä lisäämään ne. Jäin myös pohtimaan miksi se ei ollut huomannut tätä. Onko se ajatellut, että kommenteissa olevia asioita ei tarvitse toistaa README:ssa tai sitten se ei ole täysin linjassa itsensä kanssa tai sitten se ei lue kommentteja tarkasti. En keksinyt täydellistä selitystä tälle. Olin juuri ennen tätä operaatiota pyytänyt sitä päivittämään README:n vastaamaan nykyistä projektia. Kaipa tämä kertoo AI:n epätäydellisyydestä ja siitä, että ohjelmistonkehittäjiä yhä tarvitaan, mikäli tahdotaan laadukkaita lopputuloksia. Olen kuullut sanottavan, että AI tehostaa ohjelmistonkehittäjien työtä ei poista sitä. Ainakin tällä hetkellä tämä vaikuttaa olevan totta. AI osaa muuntaa ihmiskielen logiikkaa ja käskyjä ohjelmointikielen logiikaksi ja käskyiksi, mutta se ei ymmärrä mitä se tekee. Näin ainakin koen itse. Se myös osaa antaa keskimääräisiä ehdotuksia hyödynnettävistä teknologioista ja rakenteista mistä on hyötyä. Jos ohjelmistosta tahdotaan tehdä keskinkertaista parempaa, tarvitaan ihmisen visiota ja ymmärrystä. 
 
+Lopussa yritin formatoida PROMPTIT.md-tiedostoa AI:lla. En saanut järkevää lopputulosta sillä tässä vaiheessa rivejä oli melkein 10 000. AI yritti poistaa osan riveistä, mikä ei olisi ollut tarkoituksen mukaista. Tämä ongelma olisi todennäköisesti ollut ratkaistavissa promptaamalla AI kirjoittamaan keskustelut PROMPTIT.md tiedostoon suoraan, kun niitä käydään. Ensi kerralla teen näin, jos vastaava tehtävä tulee vastaan.
 
-3. Mitkä olivat tärkeimmät parannukset, jotka teit tekoälyn tuottamaan koodiin ja miksi?
+
+## 3. Mitkä olivat tärkeimmät parannukset, jotka teit tekoälyn tuottamaan koodiin ja miksi?
 
 Tuotin kaiken koodin tekoälyllä, mutta osa muokkauksista oli yksityiskohtaisempia ja promptasin ne erikseen. En näe pointtia miksi koodata ilman tekoälyä nykypäivänä, jos kyse ei ole nimenomaan koodauksen opiskelusta. Tekoäly osaa syntaksin ja minä ymmärrän mitä tahdon ohjelman tekevän sekä arkkitehtuurin, jota haluan ohjelman noudattavan. Tekoäly kääntää ideani ohjelmointikielille ja editoi muutokset tiedostoihin koko projektin laajuisesti. Erittäin näppärää! Toki on olennaista osata lukea koodia, ymmärtää mitä koodi tekee sekä hallita testaus, jotta voi varmistua koodin toimivuudesta ja ymmärrettävyydestä.
 
