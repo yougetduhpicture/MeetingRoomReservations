@@ -496,6 +496,15 @@ The project uses TypeScript's strict mode with additional checks:
 | `npm run format` | Format code with Prettier |
 | `npm run format:check` | Check code formatting |
 
+## Documentation
+
+| File | Description |
+|------|-------------|
+| `README.md` | Project overview, setup instructions, API documentation, and technical details |
+| `ANALYYSI.md` | Reflections on AI-assisted development: what worked well, what didn't, and key improvements made to AI-generated code (Finnish) |
+| `OLETUKSET.md` | Documented assumptions about business logic, technical implementation, and design decisions (Finnish) |
+| `PROMPTIT.md` | Complete log of AI prompts and conversations used during development, including the initial planning discussions (Finnish) |
+
 ## License
 
 ISC
