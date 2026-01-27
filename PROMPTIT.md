@@ -59,7 +59,7 @@ The combination gives you the flexibility of Express with the safety and maintai
 What's the best way to prompt claude.code to create an API
 
 
-**Claude:**
+### Claude
 
 19 Jan
 Here are some effective ways to prompt Claude Code to create an API:
@@ -102,7 +102,7 @@ I want it to use the same filestructure as FSO part 4
 
 
 
-**Claude:**
+### Claude
 
 19 Jan
 Ah, you want the Full Stack Open Part 4 structure! That's a clean, straightforward setup.
