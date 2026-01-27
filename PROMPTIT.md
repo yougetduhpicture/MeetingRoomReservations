@@ -6708,7 +6708,7 @@ I mean that we didn't update create_reservation.rest, delete.reservation.rest, u
 
 
 --------------------------------------------------
-UPDATING THE README
+README.md päivitys
 --------------------------------------------------
 
 
@@ -6867,7 +6867,7 @@ UPDATING THE README
 
 
 --------------------
-REMOVE TUTORIAL COMMENTS
+Poistetaan tutoriaalikommentit koodista.
 --------------------
 
 
@@ -9654,7 +9654,7 @@ by file.
 
    
 -------------------------------
-REMOVING THE 30 day search limit
+Poistetaan 30 päivän hakurajoitus.
 -------------------------------
 
 
